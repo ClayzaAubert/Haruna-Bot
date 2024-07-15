@@ -7,7 +7,7 @@ export const Config = {
 
 	prefix: ["!", ".", "+"],
 
-	maelyn_apikey: process.env.MAELYN_APIKEY || "",
+	maelyn_apikey: process.env.MAELYN_APIKEY || "", // https://api.maelyn.tech
 	bing_cookie: process.env.BING_COOKIE || "",
 
 	// change the timezone to your timezone
