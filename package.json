@@ -1,0 +1,67 @@
+{
+	"name": "haruna-bot",
+	"version": "1.0.0",
+	"description": "WhatsApp Bot",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"start": "node index.js",
+		"prettier:check": "prettier . --check",
+		"prettier:write": "prettier . --write"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ClayzaAubert/Haruna-Bot.git"
+	},
+	"keywords": [
+		"bot",
+		"Baileys",
+		"WABOT",
+		"Maelyn Bot",
+		"Haruna Bot",
+		"Maelyn Group",
+		"Maelyn API",
+		"Whatsapp Bot"
+	],
+	"author": "Clayza Aubert",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/ClayzaAubert/Haruna-Bot/issues"
+	},
+	"homepage": "https://github.com/ClayzaAubert/Haruna-Bot#readme",
+	"dependencies": {
+		"async-mutex": "^0.4.1",
+		"axios": "^1.6.8",
+		"baileys": "^6.7.5",
+		"chalk": "^5.3.0",
+		"child_process": "^1.0.2",
+		"chokidar": "^3.6.0",
+		"crypto": "^1.0.1",
+		"dotenv": "^16.4.4",
+		"file-type": "^19.0.0",
+		"fluent-ffmpeg": "^2.1.2",
+		"fs": "^0.0.1-security",
+		"gm": "^1.25.0",
+		"import-from-string": "^0.0.4",
+		"jimp": "^0.16.13",
+		"link-preview-js": "^3.0.5",
+		"maelyn.js": "^1.9.1",
+		"mongoose": "^8.2.1",
+		"node-cache": "^5.1.2",
+		"node-cron": "^3.0.3",
+		"node-fetch": "^3.3.2",
+		"node-webpmux": "^3.2.0",
+		"os": "^0.1.2",
+		"path": "^0.12.7",
+		"perf_hooks": "^0.0.1",
+		"pino": "^9.0.0",
+		"qrcode-terminal": "^0.12.0",
+		"stream": "^0.0.2",
+		"string-pixel-width": "^1.11.0",
+		"url": "^0.11.3",
+		"util": "^0.12.5"
+	},
+	"devDependencies": {
+		"prettier": "^3.2.5"
+	}
+}
