@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export default {
     command: ["Suno"],
     description: "Suno Generate Musik",
