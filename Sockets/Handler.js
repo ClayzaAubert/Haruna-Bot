@@ -1,7 +1,6 @@
 import { performance } from "perf_hooks";
 import Feature from "../Libs/Feature.js";
 import Queue from "../Libs/Queue.js";
-//import { MaelynAPI as api } from "../Utils/ApiRequest.js";
 import { Messages } from "../Utils/Messages.js";
 import { Prefix } from "../Utils/Prefix.js";
 import { Config } from "../config.js";

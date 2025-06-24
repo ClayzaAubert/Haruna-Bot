@@ -9,8 +9,8 @@ import Feature from "./Libs/Feature.js";
 await db.initialize();
 db.saveDataPeriodically();
 
-Feature.init();
-connectToWhatsApp();
+const sock = await connectToWhatsApp();
+await Feature.init(sock);
 
 // TODO: move this to a separate file
 // run cron jobs every 24 hours, reset user limit to 15

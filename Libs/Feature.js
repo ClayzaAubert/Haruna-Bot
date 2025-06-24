@@ -1,11 +1,9 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readdirSync, readFileSync } from "node:fs";
-import { importFromString } from "import-from-string";
+import { readdirSync } from "node:fs";
 import chokidar from "chokidar";
-import { Print } from "./Print.js";
-import { Feature } from "../Config/Schema.js";
 import path from "node:path";
+import { Print } from "./Print.js";
 
 class Features {
 	constructor() {
@@ -15,104 +13,87 @@ class Features {
 		this.plugins = {};
 	}
 
-	async init() {
-		if (this.isInit) {
-			return;
-		}
+	async init(sock = null) {
+		if (this.isInit) return;
 
 		const files = this.readRecursive(this.folder);
 
 		for (const file of files) {
-			await this.importFile(file);
+			await this.importFile(file, sock);
 		}
 
-		this.watch();
+		this.watch(sock);
 		this.isInit = true;
 
 		const relativePaths = Object.keys(this.plugins).map((file) =>
 			path.relative(this.folder, file)
 		);
-		Print.success(relativePaths);
+		Print.success("Loaded features:", relativePaths);
 	}
 
 	readRecursive(dirPath) {
 		let files = [];
 		const entries = readdirSync(dirPath, { withFileTypes: true });
 
-		entries.forEach((entry) => {
+		for (const entry of entries) {
 			const entryPath = join(dirPath, entry.name);
 			if (entry.isDirectory()) {
-				files = files.concat(this.readRecursive(entryPath)); // Recursively read subdirectory
+				files = files.concat(this.readRecursive(entryPath));
 			} else if (entry.isFile() && entry.name.endsWith(".js")) {
-				files.push(entryPath); // Add JavaScript file to the list
+				files.push(entryPath);
 			}
-		});
-
+		}
 		return files;
 	}
 
-	async importFile(file) {
+	async importFile(file, sock = null) {
 		const isWindows = process.platform === "win32";
-		const timestamp = Date.now();
 		const filePath = isWindows ? `file:///${file}` : `file://${file}`;
 
 		if (this.plugins[file]) {
-			Print.info(
-				`File ${path.relative(this.folder, file)} has changed. Re-importing...`
-			);
+			Print.info(`Reloading feature: ${path.relative(this.folder, file)}`);
 			delete this.plugins[file];
 		}
 
 		try {
-			const importedModule = (await import(filePath)).default;
-			this.plugins[file] = await this.parser(importedModule, file);
+			const module = await import(`${filePath}?update=${Date.now()}`);
+			const plugin = module?.default;
+
+			if (!plugin || typeof plugin !== "object") {
+				Print.warn(`No valid default export in ${path.relative(this.folder, file)}`);
+				return;
+			}
+
+			this.plugins[file] = plugin;
 			this.plugins[file].filePath = file;
+
+			// Jalankan fungsi 'all' jika tersedia
+			if (typeof plugin.all === "function") {
+				Print.info(`Running 'all()' from ${path.relative(this.folder, file)}`);
+				await plugin.all(null, sock);
+			}
 		} catch (error) {
 			Print.error(`Failed to import ${path.relative(this.folder, file)}`);
 			console.error(error);
 		}
 	}
 
-	async parser(module, file) {
-		const keys = Object.keys(Feature);
-		for (const key of keys) {
-			if (!(key in module)) {
-				Print.warn(`Feature ${path.relative(this.folder, file)} is missing the ${key}`);
-			}
-		}
-		const feature = module.haruna.toString("utf-8");
-		const newExecute = `${feature.slice(0, feature.length - 1)}try { this.callback() } catch { };}`;
+	watch(sock = null) {
+		const watcher = chokidar.watch(this.folder, {
+			persistent: true,
+			ignoreInitial: true,
+		});
 
-		const moduleStr = readFileSync(file, "utf-8").replace(feature, newExecute);
-		const newModule = (
-			await importFromString(moduleStr, {
-				dirname: dirname(file),
-			})
-		).default;
-		return newModule;
-	}
-
-	watch() {
-		const watcher = chokidar.watch(this.folder, { persistent: true, ignoreInitial: true });
-
-		watcher.on('change', (file) => {
+		watcher.on("change", (file) => {
 			if (file.endsWith(".js")) {
-				Print.info(
-					`File ${path.relative(this.folder, file)} has changed. Re-importing...`
-				);
-				this.importFile(file);
+				this.importFile(file, sock);
 			}
 		});
 
-		watcher.on('unlink', (file) => {
-			const deletedFile = Object.keys(this.plugins).find(
-				(key) => this.plugins[key].filePath === file
-			);
-			if (deletedFile) {
-				Print.info(
-					`File ${path.relative(this.folder, file)} has been removed. Deleting...`
-				);
-				delete this.plugins[deletedFile];
+		watcher.on("unlink", (file) => {
+			if (this.plugins[file]) {
+				Print.info(`Deleted: ${path.relative(this.folder, file)}`);
+				delete this.plugins[file];
 			}
 		});
 	}

@@ -7,27 +7,22 @@ import {
 } from "baileys";
 import NodeCache from "node-cache";
 import { logger } from "../Utils/Logger.js";
-import { Store } from "../Utils/Store.js";
 import { Config } from "../config.js";
 import { Handler } from "./Handler.js";
 import { Print } from "../Libs/Print.js";
+import Pino from "pino";
 
-const store = Store(logger);
-
-store?.readFromFile("./db/session.data.json");
-
-setInterval(() => {
-	store?.writeToFile("./db/session.data.json");
-}, 10_000);
 const msgRetryCounterCache = new NodeCache();
-async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
-    const { state, saveCreds } = await useMultiFileAuthState("db/sessions");
 
+async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
+	const { state, saveCreds } = await useMultiFileAuthState("db/sessions");
 	const { version } = await fetchLatestBaileysVersion();
+
 	const sock = makeWASocket({
 		version,
 		printQRInTerminal: !use_pairing_code,
 		mobile: false,
+		logger: Pino({ level: "silent" }),
 		auth: {
 			creds: state.creds,
 			keys: makeCacheableSignalKeyStore(state.keys, logger),
@@ -40,8 +35,6 @@ async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
 		getMessage,
 	});
 
-	store?.bind(sock.ev);
-
 	if (
 		use_pairing_code &&
 		Config.phone_number &&
@@ -50,7 +43,7 @@ async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
 		const phone_number = Config.phone_number.replace(/[^0-9]/g, "");
 		Print.debug("Using Pairing Code To Connect: ", phone_number);
 		await new Promise((resolve) => setTimeout(resolve, Config.pairing_wait));
-		const code = await sock.requestPairingCode(phone_number);
+		const code = await sock.requestPairingCode(phone_number, "HARUNA17");
 		Print.success("Pairing Code:", code);
 	}
 
@@ -71,7 +64,6 @@ async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
 					", reconnecting ",
 					shouldReconnect
 				);
-				// reconnect if not logged out
 				if (shouldReconnect) {
 					connectToWhatsApp();
 				}
@@ -80,22 +72,20 @@ async function connectToWhatsApp(use_pairing_code = Config.use_pairing_code) {
 			}
 		}
 		if (ev["messages.upsert"]) {
-			Handler(ev["messages.upsert"], sock, store);
+			Handler(ev["messages.upsert"], sock);
 		}
 	});
+
 	/**
-	 *
 	 * @param {import("baileys").WAMessageKey} key
 	 * @returns {import("baileys").WAMessageContent | undefined}
 	 */
 	async function getMessage(key) {
-		if (store) {
-			const msg = await store.loadMessage(key.remoteJid, key.id);
-			return msg?.message || undefined;
-		}
-		// only if store is present
-		return proto.Message.fromObject({});
+		// Karena tidak ada store, return kosong ajah
+		return undefined;
 	}
+
 	return sock;
 }
+
 export default connectToWhatsApp;

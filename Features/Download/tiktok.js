@@ -1,6 +1,6 @@
 export default {
 	command: ["tiktok", "tt"],
-	description: "Tiktok Downloader (Slide, Audio, Video)",
+	description: "Tiktok/Douyin Downloader (Slide, Audio, Video)",
 	category: "Download",
 	owner: false,
 	admin: false,
@@ -11,62 +11,77 @@ export default {
 
 	haruna: async function (m, { sock, api, text }) {
 		if (!text) return m.reply("Silakan berikan tautan TikTok.");
-		m.react("💬")
+		m.react("💬");
 
 		try {
 			const res = await api.get("/tiktok/download", { url: text });
-			if (!res || !res.result) throw new Error("Tidak dapat mengambil data dari API.");
+			const data = res?.result;
+			if (!data) throw new Error("Tidak dapat mengambil data dari API.");
 
-			const { title, source, duration, medias } = res.result;
+			const { title, author, video, image_data, music } = data;
 
-			const images = medias.filter(media => media.extension.toLowerCase() === 'jpg');
-			const mp3 = medias.find(media => media.extension.toLowerCase() === 'mp3');
-			const sdVideo = medias.find(media => media.quality.toLowerCase() === 'sd');
+			// Jika image_data (photo mode)
+			if (image_data?.no_watermark_image_list?.length) {
+				await m.react("🖼️");
 
-			// Mengirim gambar jika ada
-			if (images.length > 0) {
-				for (const image of images) {
-					await m.react("✅")
-					await sock.sendMessage(
-						m.chat,
-						{ image: { url: image.url }, caption: `*_${res.powered}_*` },
-						{ quoted: m }
-					);
-				}
-				if (mp3) {
+				const albumItems = image_data.no_watermark_image_list.map((imgUrl, i) => ({
+					image: { url: imgUrl },
+					caption: i === 0 ? `🖼️ *${title}*\n👤 @${author.username}\n\n_${res.powered}_` : undefined
+				}));
+
+				await sock.sendAlbumMessage(
+					m.chat,
+					albumItems,
+					{
+						quoted: m,
+						delay: 1.5 // delay antar file (detik), opsional
+					}
+				);
+
+				if (music?.url) {
 					await sock.sendMessage(
 						m.chat,
 						{
-							audio: { url: mp3.url },
+							audio: { url: music.url },
 							mimetype: "audio/mp4",
+							fileName: music.title || "audio.mp3",
 						},
 						{ quoted: m }
 					);
 				}
+
 				return;
 			}
 
-			if (!sdVideo) throw new Error("Video dengan kualitas 'sd' tidak ditemukan.");
+			// Jika video
+			if (video?.nwm_url || video?.nwm_url_hq) {
+				await m.react("📽️");
 
-			const responseMessage = `🔍 Title: ${title}\n🃏 Source: ${source}\n⏳ Durasi: ${duration}\n📆 Size: ${sdVideo.formattedSize}\n💽 Quality: ${sdVideo.quality}\n`;
+				const videoUrl = video.nwm_url_hq || video.nwm_url;
+				const caption = `🎬 *${title}*\n👤 @${author.username}\n✅ Verified: ${author.verified ? "Ya" : "Tidak"}\n🌍 Region: ${data.region}\n\n🎵 Musik: ${music?.title || "Unknown"}\n\n_${res.powered}_`;
 
-			await m.react("✅")
-			await sock.sendMessage(
-				m.chat,
-				{ video: { url: sdVideo.url }, caption: responseMessage },
-				{ quoted: m }
-			);
-
-			if (mp3) {
 				await sock.sendMessage(
 					m.chat,
-					{
-						audio: { url: mp3.url },
-						mimetype: "audio/mp4",
-					},
+					{ video: { url: videoUrl }, caption },
 					{ quoted: m }
 				);
+
+				if (music?.url) {
+					await sock.sendMessage(
+						m.chat,
+						{
+							audio: { url: music.url },
+							mimetype: "audio/mp4",
+							fileName: music.title || "audio.mp3",
+						},
+						{ quoted: m }
+					);
+				}
+
+				return;
 			}
+
+			throw new Error("Tidak ada konten yang dapat dikirim (gambar atau video tidak ditemukan).");
 		} catch (error) {
 			console.error("Error:", error);
 			await m.react("❌");
@@ -74,7 +89,7 @@ export default {
 		}
 	},
 
-	failed: "Failed to execute the %cmd command\n\n%error",
+	failed: "Gagal menjalankan perintah %cmd\n\n%error",
 	wait: null,
 	done: null,
 };

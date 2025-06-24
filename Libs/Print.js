@@ -99,13 +99,198 @@ export class Print {
 	}
 }
 
+/**
+ * Print incoming WhatsApp message with style and channel/group/private support
+ * @param {import("baileys").proto.IWebMessageInfo} m
+ * @param {ReturnType<typeof import("baileys").makeWASocket>} sock
+ */
 export async function printMessage(m, sock) {
-	console.log(
-		`${chalk.greenBright("[ MSG ]")}: ${chalk.bold(
-			chalk.italic(m.pushName),
-			chalk.bold(`- ${m.sender.replace(/[^0-9]/g, "")}`)
-		)} (${chalk.blueBright(
-			m.isGroup ? await (await sock.groupMetadata(m.chat)).subject : "Private Chat"
-		)}): ${chalk.visible(m.text)}`
-	);
+	const senderId = m.key?.participant || m.key?.remoteJid || "unknown@jid";
+	let lidId = "unknown@lid";
+if (senderId && senderId.endsWith("@s.whatsapp.net")) {
+	try {
+		lidId = await sock.getLidUserId(senderId);
+	} catch (err) {
+		console.error("Gagal ambil LID:", err.message);
+	}
+}
+	const chatId = m.key?.remoteJid || "unknown@jid";
+
+	const isGroup = chatId.endsWith("@g.us");
+	const isChannel = chatId.endsWith("@newsletter");
+	const isPrivate = !isGroup && !isChannel;
+
+	const numberOnly = senderId.replace(/[^0-9]/g, "") || "-";
+	const now = new Date();
+	const timeStamp = `${now.toLocaleTimeString("id-ID", { hour12: false })} ${now.toLocaleDateString("id-ID")}`;
+
+	// Get sender name & chat name
+	let senderName = "Unknown";
+	let chatName = "Private Chat";
+
+	try {
+		if (isChannel) {
+			// For channels, get the channel name from chatId
+			chatName = await m.getName(chatId) || "Channel";
+			// For channel sender, use the channel name or original format
+			senderName = chatName.replace("Channel ", "") || senderId.split('@')[0];
+		} else {
+			// Get sender name - gunakan m.pushName (property) atau m.getName()
+			if (m.pushName && m.pushName.trim()) {
+				senderName = m.pushName;
+			} else {
+				senderName = await m.getName(senderId) || `+${numberOnly}`;
+			}
+
+			if (isGroup) {
+				// Get group name
+				try {
+					const groupMetadata = await sock.groupMetadata(chatId);
+					chatName = groupMetadata.subject || "Group";
+				} catch (error) {
+					chatName = await m.getName(chatId) || "Group";
+				}
+			} else {
+				chatName = "Private Chat";
+			}
+		}
+	} catch (error) {
+		console.log('Error getting names:', error.message);
+		if (isChannel) {
+			senderName = "Channel";
+			chatName = "Channel";
+		} else {
+			// Fallback ke pushName atau number
+			senderName = m.pushName || `+${numberOnly}`;
+			chatName = isGroup ? "Group" : "Private Chat";
+		}
+	}
+
+	// Debug logging
+// console.log(JSON.stringify({
+// 	debug: true,
+// 	senderId,
+// 	lidId,
+// 	chatId,
+// 	isChannel,
+// 	isGroup,
+// 	pushName: m.pushName,
+// 	senderName,
+// 	chatName
+// }, null, 2));
+
+	// Get message type and content
+	const msg = m.message || {};
+	const messageType = Object.keys(msg)[0] || "unknown";
+
+	let content = "";
+	let label = "";
+
+	// Debug message structure
+// 	console.log(`Message structure debug:
+// - messageType: ${messageType}
+// - m.text: ${m.text}
+// - m.mtype: ${m.mtype}
+// - msg keys: ${Object.keys(msg).join(', ')}`);
+
+	// Use m.text if available (from Messages function processing)
+	if (m.text && m.text.trim()) {
+		content = m.text;
+	}
+
+	switch (messageType) {
+		case "conversation":
+			content = content || msg.conversation || "";
+			label = "TEXT";
+			break;
+
+		case "extendedTextMessage":
+			content = content || msg.extendedTextMessage?.text || "";
+			label = "TEXT";
+			break;
+
+		case "imageMessage":
+			content = content || msg.imageMessage?.caption || "";
+			label = "IMAGE";
+			break;
+
+		case "videoMessage":
+			content = content || msg.videoMessage?.caption || "";
+			label = "VIDEO";
+			break;
+
+		case "documentMessage":
+			const fileName = msg.documentMessage?.fileName || "Unnamed";
+			content = content || msg.documentMessage?.caption || "";
+			label = `DOCUMENT (${fileName})`;
+			break;
+
+		case "audioMessage":
+			label = msg.audioMessage?.ptt ? "PTT" : "AUDIO";
+			break;
+
+		case "stickerMessage":
+			label = "STICKER";
+			break;
+
+		case "contactMessage":
+			label = "CONTACT";
+			break;
+
+		case "locationMessage":
+			label = "LOCATION";
+			break;
+
+		case "reactionMessage":
+			const reaction = msg.reactionMessage?.text || "👍";
+			content = `Reacted with ${reaction}`;
+			label = "REACTION";
+			break;
+
+		case "protocolMessage":
+			label = "PROTOCOL";
+			content = "Message deleted or protocol update";
+			break;
+
+		case "ephemeralMessage":
+			// Handle ephemeral messages
+			const ephemeralMsg = msg.ephemeralMessage?.message;
+			if (ephemeralMsg) {
+				const ephemeralType = Object.keys(ephemeralMsg)[0];
+				content = ephemeralMsg.conversation || 
+						 ephemeralMsg[ephemeralType]?.text || 
+						 ephemeralMsg[ephemeralType]?.caption || "";
+				label = "EPHEMERAL";
+			}
+			break;
+
+		default:
+			// Fallback: try to extract text from any message type
+			if (!content && msg[messageType]) {
+				content = msg[messageType].text || 
+						 msg[messageType].caption || 
+						 msg[messageType].conversation || "";
+			}
+			
+			// If still no content but m.text exists, use it
+			if (!content && m.text) {
+				content = m.text;
+				label = "TEXT";
+			} else {
+				label = messageType.toUpperCase() || "UNKNOWN";
+			}
+			break;
+	}
+
+	// Styling
+	const bubble = chalk.bgHex("#6C5CE7").white.bold(` ${label} `);
+	const line = chalk.hex("#6C5CE7");
+
+	const header = `${line("╭────────────────────────────────────────────")}`;
+	const title = `${line("│")} ${chalk.bold(senderName)} ${chalk.gray("-")} ${chalk.cyanBright(numberOnly)} ${chalk.gray("(" + chatName + ")")}`;
+	const time = `${line("│")} ${chalk.gray("🕒")} ${chalk.white(timeStamp)}`;
+	const messageLine = `${line("│")} ${chalk.whiteBright(content || chalk.gray("[no caption]"))}`;
+	const footer = `${line("╰────────────────────────────────────────────")}`;
+
+	Print._log(`${bubble}\n${header}\n${title}\n${time}\n${messageLine}\n${footer}`);
 }
