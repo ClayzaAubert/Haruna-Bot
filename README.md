@@ -1,7 +1,7 @@
 <div align="center">
   <h1><i>Kurodate Haruna</i> WhatsApp Bot</h1>
   <h3>──────────── Powered by Maelyn API ────────────</h3>
-  <img src="https://s6.imgcdn.dev/Yc8Rxy.png" alt="Kurodate Haruna MD" width="auto" />
+  <img src="https://s6.imgcdn.dev/Yc8bUC.png" alt="Kurodate Haruna MD" width="auto" />
 </div>
 
 ---
