@@ -11,29 +11,44 @@ export default {
 
     haruna: async function (m, { sock, api, text }) {
         if (!text) {
-            return m.reply("> GPT Model :\n- gpt-4\n- gpt-3\n- davinci\n- gpt-3.5-turbo\n\nUsage: .gpt gpt-4 hallo");
+            return m.reply(
+                "> GPT Model :\n" +
+                "- gpt-4\n" +
+                "- gpt-3\n" +
+                "- davinci\n" +
+                "- gpt-3.5-turbo\n" +
+                "- gpt-4o\n" +
+                "- gpt-4o-mini\n" +
+                "- chatgpt\n" +
+                "\nUsage: .gpt gpt-4 hallo"
+            );
         }
 
-        let modelName;
+        const modelMap = {
+            "gpt-4": "GPT-4",
+            "gpt-3": "GPT-3",
+            "davinci": "Da Vinci GPT",
+            "gpt-3.5-turbo": "GPT-3.5 Turbo",
+            "gpt-4o": "GPT-4o",
+            "gpt-4o-mini": "GPT-4o Mini",
+            "chatgpt": "ChatGPT (GPT-3.5 Turbo)"
+        };
+
+        let modelType, modelName;
         const queryParts = text.split(" ");
-        const modelType = queryParts[0].toLowerCase();
+        if (queryParts.length < 2) {
+            return m.reply("Please use `.gpt <model> <your prompt>`.\nExample: .gpt gpt-4o halo apa kabar?");
+        }
+        modelType = queryParts[0].toLowerCase();
+        modelName = modelMap[modelType];
         const query = queryParts.slice(1).join(" ");
 
-        switch (modelType) {
-            case "gpt-4":
-                modelName = "GPT-4";
-                break;
-            case "gpt-3":
-                modelName = "GPT-3";
-                break;
-            case "davinci":
-                modelName = "Da Vinci GPT";
-                break;
-            case "gpt-3.5-turbo":
-                modelName = "GPT-3.5 Turbo";
-                break;
-            default:
-                return m.reply("Invalid model type. Please use `.gpt gpt-4 QUERY`, `.gpt gpt-3 QUERY`, `.gpt davinci QUERY`, or `.gpt gpt-3.5-turbo QUERY`.");
+        if (!modelName) {
+            return m.reply(
+                "Invalid model type.\n\nList model yang tersedia:\n" +
+                Object.keys(modelMap).map(x => `- ${x}`).join('\n') +
+                "\n\nUsage: .gpt <model> <your prompt>"
+            );
         }
 
         try {
@@ -42,7 +57,7 @@ export default {
                 model: modelType 
             });
 
-            if (response.status === "Success") {
+            if (response.status === "Success" || response.status === "success") {
                 const result = response.result;
                 await m.reply(`*[ ${modelName} ]*\n${result}`);
             } else {

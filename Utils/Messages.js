@@ -89,7 +89,7 @@ const getName = async (jid = '', withoutContact = false, sock, store) => {
 					try {
 						const res = await m();
 						if (res?.name || res?.subject) return res.name || res.subject;
-					} catch {}
+					} catch { }
 				}
 
 				return `Newsletter ${jid.split('@')[0].slice(-6)}`;
@@ -110,14 +110,14 @@ const getName = async (jid = '', withoutContact = false, sock, store) => {
 					const [res] = await sock.onWhatsApp(jid.replace('@s.whatsapp.net', ''));
 					if (res?.name) v.name = res.name;
 					if (res?.notify) v.notify = res.notify;
-				} catch {}
+				} catch { }
 			}
 
 			if (!v.name) {
 				try {
 					const status = await sock.fetchStatus(jid);
 					if (status?.status) v.status = status.status;
-				} catch {}
+				} catch { }
 			}
 		}
 
@@ -171,11 +171,13 @@ export function Messages(upsert, sock, store) {
 		if (quoted) {
 			const qMsg = quoted.ephemeralMessage?.message || quoted;
 			const type = Object.keys(qMsg)[0];
-			const message = qMsg[type]?.message || qMsg[type] || qMsg;
+			const message = qMsg[type] || qMsg; // ambil imageMessage/videoMessage utuh
+			const fullMessage = qMsg; // simpan semua jika perlu
 
 			m.quoted = {
 				participant: jidNormalizedUser(m.contextInfo.participant),
-				message,
+				message, // ini sekarang aman
+				mediaMessageFull: fullMessage,
 				sender: jidNormalizedUser(m.contextInfo.participant),
 				mtype: getContentType(message),
 				key: {
@@ -195,11 +197,10 @@ export function Messages(upsert, sock, store) {
 					sock.sendMessage(m.chat, {
 						react: { text: String(emoji), key: m.quoted.key },
 					}),
-				delete: () =>
-					sock.sendMessage(m.chat, { delete: m.quoted.key }),
+				delete: () => sock.sendMessage(m.chat, { delete: m.quoted.key }),
 				getName: (w = false) =>
 					getName(m.quoted.sender, w, sock, store),
-				download: (path) => downloadMedia(message, path),
+				download: (path) => downloadMedia(fullMessage, path),
 				reactLid: async (emoji) => {
 					const to = await resolveLid(m.chat, sock);
 					return sock.sendMessage(to, {

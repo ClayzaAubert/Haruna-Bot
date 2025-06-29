@@ -1,5 +1,3 @@
-import Uploader from "../../Libs/Uploader.js";
-
 export default {
 	command: ["ocr"],
 	description: "Optical character recognition.",
@@ -11,17 +9,17 @@ export default {
 	group: false,
 	private: false,
 
-	haruna: async function (m, { sock, api }) {
-		const q = m.quoted ? m.quoted : m;
-		const mime = q.mtype || "";
+	haruna: async function (m, { sock, api, cdn }) {
+        const q = m.quoted || m;
+        const mime = q.message?.mimetype || "";
+        const isImage = /webp|image/.test(mime) || ["imageMessage", "stickerMessage"].includes(q.mtype);
 
-		if (!mime.startsWith("image/")) {
-			return m.reply("Please reply/send an image with the command");
-		}
+        if (!isImage) {
+            return m.reply("Please reply/send an image with the command");
+        }
 
 		const media = await q.download();
-		const buffer = Buffer.isBuffer(media) ? media : Buffer.from(media, "utf-8");
-		const url = await Uploader.providers.telegraph.upload(buffer);
+		const url = await cdn.maelyn(media);
 
 		try {
             const response = await api.get("/ocr", { url: url });

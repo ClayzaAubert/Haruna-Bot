@@ -1,6 +1,7 @@
 import { performance } from "perf_hooks";
 import Feature from "../Libs/Feature.js";
 import Queue from "../Libs/Queue.js";
+import cdn from "../Libs/Uploader.js";
 import { Messages } from "../Utils/Messages.js";
 import { Prefix } from "../Utils/Prefix.js";
 import { Config } from "../config.js";
@@ -101,6 +102,7 @@ export async function Handler(upsert, sock, store) {
 				sock,
 				conn: sock,
 				api,
+				cdn,
 				groupMetadata,
 				isOwner,
 				isAdmin,

@@ -1,217 +1,225 @@
 <div align="center">
-  <h1><i>Kurodate Haruna</i> WhatsApp Bot</h1>
-  <h3>──────────── Powered by Maelyn API ────────────</h3>
   <img src="https://s6.imgcdn.dev/Yc8bUC.png" alt="Kurodate Haruna MD" width="auto" />
+  <h1><strong>Kurodate Haruna MD</strong></h1>
+  <p>
+    <strong>Bot WhatsApp performa tinggi yang dibangun dengan arsitektur modular, berbasis event, dan terintegrasi penuh dengan Maelyn API.</strong>
+  </p>
+
+  <p>
+    <a href="https://github.com/ClayzaAubert/Haruna-Bot/stargazers"><img src="https://img.shields.io/github/stars/ClayzaAubert/Haruna-Bot?style=for-the-badge&logo=github&color=FFB6C1&logoColor=black" alt="Stars"></a>
+    <a href="https://github.com/ClayzaAubert/Haruna-Bot/network/members"><img src="https://img.shields.io/github/forks/ClayzaAubert/Haruna-Bot?style=for-the-badge&logo=github&color=FFB6C1&logoColor=black" alt="Forks"></a>
+    <a href="https.com/github/ClayzaAubert/Haruna-Bot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ClayzaAubert/Haruna-Bot?style=for-the-badge&color=FFB6C1&logoColor=black" alt="License"></a>
+    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/npm?style=for-the-badge&logo=nodedotjs&color=FFB6C1&logoColor=black" alt="NodeJS"></a>
+  </p>
+
+  <h4>Didukung oleh <a href="https://maelyn.sbs">Maelyn API</a> • Dibangun dari basis <a href="https://github.com/xct007/SuryaRB">SuryaRB</a></h4>
 </div>
 
----
+**Haruna-Bot** adalah kerangka kerja (framework) bot WhatsApp yang dirancang untuk kemudahan kustomisasi dan skalabilitas. Dengan sistem plugin yang intuitif, Anda dapat dengan mudah menambah atau mengubah fitur tanpa menyentuh kode inti. Ditenagai oleh **`@clayzaaubert/baileys-rise`**, sebuah fork Baileys yang dioptimalkan, Haruna-Bot menawarkan stabilitas dan performa yang andal.
 
-**Haruna-Bot** adalah WhatsApp Bot open-source yang dikembangkan dari kode dasar milik [SuryaRB](https://github.com/xct007/SuryaRB), yang telah didesain ulang agar lebih fleksibel, modular (berbasis plugin & event), serta memiliki performa tinggi—dengan integrasi penuh ke seluruh fitur [Maelyn API](https://maelyn.sbs).
+## ✨ Fitur Unggulan
 
-Bot ini menggunakan `baileys-rise`, sebuah versi modifikasi dari Baileys yang saya sesuaikan secara khusus untuk kebutuhan Haruna-Bot. Paket ini tersedia di [npm](https://www.npmjs.com/package/@clayzaaubert/baileys-rise), dan akan terus saya perbarui secara berkala untuk mengikuti perkembangan dan pembaruan dari Baileys resmi.
+*   **🧩 Sistem Plugin:** Buat fitur dengan mengisolasi logika dalam file terpisah. Cukup letakkan di direktori `Features/`, dan bot akan memuatnya secara otomatis.
+*   **🚀 Performa Tinggi:** Arsitektur yang dioptimalkan untuk respons cepat dan penggunaan memori yang efisien.
+*   **🔗 Integrasi API:** Dilengkapi dengan *wrapper* Axios untuk integrasi tanpa batas ke [Maelyn API](https://maelyn.sbs).
+*   **🔧 Konfigurasi Terpusat:** Kelola semua pengaturan dalam satu file `config.js` yang mudah dipahami.
+*   **⏰ Penjadwalan Tugas (Cron):** Jalankan fungsi secara otomatis pada interval waktu tertentu.
+*   **🔒 Login Aman:** Mendukung login menggunakan **Pairing Code**, metode yang lebih aman dan praktis.
 
----
+## 📚 Daftar Isi
 
-## 🌐 Maelyn Group Services
+1.  [Prasyarat](#-prasyarat)
+2.  [Instalasi & Setup](#-instalasi--setup)
+3.  [Menjalankan Bot](#-menjalankan-bot)
+4.  [Struktur Proyek](#-struktur-proyek)
+5.  [Panduan Pengembangan](#-panduan-pengembangan)
+    *   [A. Membuat Perintah Plugin](#a-membuat-perintah-plugin)
+    *   [B. Resep Kode: Contoh Aksi di dalam Plugin](#b-resep-kode-contoh-aksi-di-dalam-plugin)
+    *   [C. Menangani Event Otomatis](#c-menangani-event-otomatis)
+    *   [D. Mengirim Pesan Lanjutan dengan `sock.sendMessage`](#d-mengirim-pesan-lanjutan-dengan-socksendmessage)
+6.  [Contributors](#-contributors)
+7.  [Lisensi](#-lisensi)
 
-* 🔗 [Maelyn Group](https://maelyn.my.id)
-* 🧠 [Maelyn API](https://maelyn.sbs)
+## ✅ Prasyarat
 
----
+*   [Node.js](https://nodejs.org/en/) (v20.x atau lebih baru)
+*   [Git](https://git-scm.com/downloads)
+*   [FFmpeg](https://ffmpeg.org/download.html)
+*   [MongoDB](https://www.mongodb.com/try/download/community) (Opsional)
 
-## 📚 Table of Contents
+## ⚙️ Instalasi & Setup
 
-* [Requirements](#requirements)
-* [Installation](#installation)
-* [Configuration](#configuration)
-* [Creating Features/Plugins](#creating-featuresplugins)
-* [Event Handling](#event-handling)
-* [License](#license)
-* [Contributors](#contributors)
+1.  **Clone Repository:**
+    ```sh
+    git clone https://github.com/ClayzaAubert/Haruna-Bot.git
+    cd Haruna-Bot
+    ```
 
----
+2.  **Instal Dependensi:**
+    ```sh
+    npm install
+    ```
 
-## ✅ Requirements
+3.  **Konfigurasi Environment:**
+    ```sh
+    cp .env.example .env
+    ```
+    Buka `.env` dan isi `MAELYN_APIKEY` yang didapat dari [dashboard Maelyn](https://api.maelyn.tech).
 
-* [Node.js](https://nodejs.org/en/) v20+
-* [Git](https://git-scm.com/)
-* [FFmpeg](https://ffmpeg.org/) *(untuk fitur stiker/audio)*
-* [MongoDB](https://www.mongodb.com/) *(opsional untuk database mode Mongo)*
+4.  **Sesuaikan Konfigurasi:**
+    Buka `config.js` untuk mengatur nomor `owners`, `prefix`, dll.
 
----
+## 🚀 Menjalankan Bot
 
-## ⚙️ Installation
+*   **Mode Pengembangan:** `npm start`
+*   **Mode Produksi (PM2):**
+    ```sh
+    pm2 start index.js --name "HarunaBot"
+    pm2 logs HarunaBot
+    ```
 
-```sh
-# 1. Clone repository
-git clone https://github.com/ClayzaAubert/Haruna-Bot.git
-cd Haruna-Bot
+## 📂 Struktur Proyek
 
-# 2. Install dependencies
-npm install
-
-# 3. Ubah nama file .env.example menjadi .env
-cp .env.example .env
-
-# 4. Isi MAELYN_APIKEY di file .env
-# dapatkan dari https://api.maelyn.tech
-
-# 5. Jalankan bot
-npm start
-# atau dengan PM2 (production-ready)
-pm2 start index.js --name "HarunaBot"
+```
+.
+├── Config/           # Konfigurasi tambahan (font, style, dll.)
+├── Features/         # Semua file plugin (perintah bot).
+├── Libs/             # Pustaka fungsi pembantu.
+├── Sockets/          # Mengelola koneksi dan logic socket Baileys.
+├── Utils/            # Utilitas umum (Messages.js).
+├── db/               # Penyimpanan database.json (jika mode JSON aktif).
+├── .env.example      # Template variabel environment.
+├── config.js         # Berkas konfigurasi utama.
+├── index.js          # Titik masuk aplikasi.
+└── package.json      # Dependensi dan skrip proyek.
 ```
 
----
+## ✍️ Panduan Pengembangan
 
-## 🔧 Configuration
+### A. Membuat Perintah Plugin
 
-Semua konfigurasi utama ada di `config.js`:
+Setiap file JavaScript di dalam direktori `Features/` akan dimuat sebagai sebuah perintah bot.
 
-```js
-export const Config = {
-  owners: ["62xxxxxx"],
-  use_pairing_code: true,
-  pairing_wait: 6000,
-  prefix: ["!", "."],
-  timezone: "Asia/Jakarta",
-  maelyn_apikey: process.env.MAELYN_APIKEY,
+1.  **Buat File Baru:** Misalnya, `Features/demo.js`.
+2.  **Gunakan Struktur Dasar:** Setiap plugin harus mengekspor objek dengan metadata dan fungsi `haruna`.
 
-  profile: {
-    namebot: "Kurodate Haruna",
-    powered: "By Maelyn APIs",
-    web: "https://maelyn.tech",
-  },
+    ```javascript
+    export default {
+      command: ["demo"],
+      description: "Contoh plugin.",
+      category: "Utility",
+      haruna: async function(m, options) {
+        // ... Logika bot ada di sini ...
+      }
+    };
+    ```
 
-  images: {
-    menu: "https://telegra.ph/file/f40d32d686760637e49c4.jpg",
-    allmenu: "https://telegra.ph/file/460a444e140f5a5948532.jpg",
-  },
+### B. Resep Kode: Contoh Aksi di dalam Plugin
 
-  database: {
-    use_mongo: true,
-    mongo_url: "mongodb://localhost:27017/database",
-    path: "./database.json",
-    save_interval: 10_000,
-    debug: false,
-  },
-};
-```
+Bagian ini adalah "dapur" dari bot Anda. Berikut adalah contoh lengkap yang bisa Anda letakkan di dalam fungsi `haruna` untuk melakukan berbagai aksi umum.
 
----
-
-## 🧩 Creating Features/Plugins
-
-Buat file baru di folder `Features/`:
-
-```js
-// Features/hello.js
-
-export default {
-  // Command triggers
-  command: ["hello", "hi"],
-  description: "Say hello",
-  category: "General",
-
-  owner: false,
-  admin: false,
-  hidden: false,
-  limit: false,
-  group: false,
-  private: false,
-
-  /**
-   * @param {import("../../Utils/Messages").ExtendedWAMessage} m - Message object
-   * @param {import("../Handler").miscOptions} options - Command options
-   */
-  haruna: async function (
-    m,
-    {
-      args,
-      sock,
-      conn,
-      api,
-      groupMetadata,
-      isOwner,
-      isAdmin,
-      command,
-      text,
-      usedPrefix,
-      db,
-    }
-  ) {
-    // Contoh reply biasa
+```javascript
+  // File: Features/demo.js
+  haruna: async function (m, { sock, api }) { // `m`, `sock`, `api` adalah objek pembantu
+    
+    // 1. Membalas pesan
     m.reply("Hello World!");
 
-    // Fancy text reply (gunakan style dari Config/Fonts.js)
+    // 2. Membalas dengan gaya teks kustom
     m.reply("Hello with style", "funky");
 
-    // Update pesan (loading ke hasil)
-    const update = await m.replyUpdate("Sedang diproses...");
-    // Proses ...
-    update("Selesai diproses!");
+    // 3. Mengirim pesan lalu mengeditnya (efek "loading...")
+    const update = await m.replyUpdate("Sedang memproses...");
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulasi proses
+    update("✔️ Proses Selesai!");
 
-    // React dengan emoji
+    // 4. Memberi reaksi emoji pada pesan
     m.react("🔥");
 
-    // Hapus pesan
-    m.delete();
-
-    // Download media jika ada
+    // 5. Mengunduh media (gambar/video/stiker) dari pesan
     const media = await m?.download?.().catch(() => null);
     if (media) {
-      // Proses media buffer
+      m.reply("Media berhasil diunduh!");
+      // sock.sendMessage(m.chat, { image: media });
     }
 
-    // Request ke Maelyn API (atau API lainnya)
-    const response = await api.get("/path/to/endpoint", { param: "value" });
-    if (response?.data?.status) {
-      m.reply(JSON.stringify(response.data, null, 2));
+    // 6. Request ke Maelyn API
+    try {
+      const response = await api.get("/ai/v2/tts", { text: "Halo dari Haruna Bot" });
+      if (response?.data?.status) {
+        m.reply(`Sukses! URL Audio: ${response.data.url}`);
+      }
+    } catch (e) {
+      m.reply(`Gagal request API: ${e.message}`);
     }
   }
-};
 ```
 
----
+### C. Menangani Event Otomatis
 
-## 🔄 Event Handling
+Gunakan `node-cron` untuk tugas terjadwal. Contoh: membuat file `Events/dailyMessage.js` untuk mengirim pesan "selamat pagi" setiap hari.
 
-Kamu bisa membuat event seperti mengirim pesan otomatis setiap hari, menyapa user baru, dll.
-
-Contoh: Kirim pesan ke grup tertentu setiap 1 hari
-
-> Buat file baru di folder `Events/autoDaily.js`
-
-```ts
+```javascript
 import cron from "node-cron";
 
 export default {
   async all(_, sock) {
-    // Kirim pesan setiap pukul 08:00 WIB setiap hari
     cron.schedule("0 8 * * *", async () => {
-      const chatId = "120xxxxxxxx@g.us"; // ID grup
+      const groupId = "12036304xxxxxxxxxx@g.us"; // Ganti ID grup
       try {
-        await sock.sendMessage(chatId, { text: "Selamat pagi dari Haruna 💌" });
-        console.log("Pesan harian berhasil dikirim.");
+        await sock.sendMessage(groupId, { text: "Selamat pagi! ☀️" });
       } catch (e) {
-        console.error("Gagal kirim pesan harian:", e);
+        console.error("Gagal mengirim pesan harian:", e);
       }
+    }, {
+      timezone: "Asia/Jakarta"
     });
   },
 };
 ```
 
-> Penjelasan:
+### D. Mengirim Pesan Lanjutan dengan `sock.sendMessage`
 
-* Fungsi `all(_, sock)` akan dipanggil saat bot aktif.
-* `cron.schedule()` menjalankan fungsi sesuai jadwal (di sini: pukul 08:00 tiap hari).
-* Format cron: `menit jam hari-bulan bulan hari-minggu`
+Meskipun fungsi `m.reply()` sangat praktis, untuk kontrol lebih besar seperti mengirim media, mention, atau mengutip pesan secara spesifik, Anda harus menggunakan `sock.sendMessage`. Ini adalah fungsi inti dari Baileys.
 
----
+Berikut adalah beberapa contoh penggunaannya di dalam fungsi `haruna`:
 
-## 📜 License
+```javascript
+  haruna: async function (m, { sock }) {
 
-This project is licensed under the [MIT License](LICENSE).
+    // 1. Mengirim gambar dari URL dengan caption
+    await sock.sendMessage(m.chat, { 
+      image: { url: "https://s6.imgcdn.dev/Yc8bUC.png" },
+      caption: "Ini Kurodate Haruna!" 
+    });
+
+    // 2. Mengirim audio sebagai Voice Note (PTT)
+    // Pastikan path ke file audio sudah benar
+    await sock.sendMessage(m.chat, { 
+      audio: { url: "./path/to/your/audio.mp3" }, 
+      ptt: true // true untuk voice note, false untuk file audio biasa
+    });
+    
+    // 3. Mengirim pesan sambil me-mention pengguna
+    const text = `Halo @${m.sender.split('@')[0]}, apa kabar?`;
+    await sock.sendMessage(m.chat, { 
+      text: text, 
+      mentions: [m.sender] // m.sender adalah JID pengguna
+    });
+
+    // 4. Membalas pesan spesifik (mengutip)
+    // Ini adalah cara kerja `m.reply()` di balik layar
+    await sock.sendMessage(m.chat, { 
+      text: "Ini adalah balasan yang mengutip pesan Anda." 
+    }, { 
+      quoted: m.key // `m.key` berisi metadata pesan yang akan dikutip
+    });
+
+  }
+```
+
+> [!NOTE]
+> Untuk variasi `sendMessage` yang lebih lengkap, seperti mengirim video, dokumen, stiker, tombol, dan lainnya, bisa kalian lihat disini: **https://www.npmjs.com/package/@clayzaaubert/baileys-rise#sending-messages**
 
 ---
 
@@ -219,3 +227,8 @@ This project is licensed under the [MIT License](LICENSE).
 
 * [Clayza Aubert](https://github.com/ClayzaAubert) (Lead Developer)
 * [xct007](https://github.com/xct007) (Base Engine - SuryaRB)
+
+---
+## 📜 Lisensi
+
+This project is licensed under the [MIT License](LICENSE).

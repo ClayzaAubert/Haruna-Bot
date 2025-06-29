@@ -11,21 +11,22 @@ export default {
 	group: false,
 	private: false,
 
-	haruna: async function (m, { sock, api }) {
+	haruna: async function (m, { sock, api, cdn }) {
 		try {
 			await m.react("🕒");
 
 			let imageUrl = "";
 			const q = m.quoted ? m.quoted : m;
-			const mime = (q.msg || q).mimetype || q.mediaType || "";
+			const mime = q.message?.mimetype || "";
 			const text = m.text || "gambar apa ini";
+            const isImage = /webp|image/.test(mime) || ["imageMessage", "stickerMessage"].includes(q.mtype);
 
 			// Memproses gambar jika ada
-			if (/^image/.test(mime) && !/webp/.test(mime)) {
+			if (isImage) {
 				const img = await q.download();
 				if (!img) throw new Error("Gagal mengunduh gambar.");
 
-				imageUrl = await Uploader.providers.quax.upload(img);
+				imageUrl = await cdn.maelyn(img);
 				if (!imageUrl) throw new Error("Gagal mengunggah gambar.");
 			}
 
@@ -34,7 +35,7 @@ export default {
 				q: text,
 				url: imageUrl,
 				roleplay: "kamu adalah maelyn ai",
-				uuid: "ec860782-7c24-48d8-bf84-ef431c82bcc1",
+				uuid: "maelynai-edfae4ae-2f78-4ee0-8e3a-dd56670afbd6",
 			});
 
 			// Memastikan respon dari API valid

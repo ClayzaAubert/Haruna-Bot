@@ -1,35 +1,47 @@
 export const Config = {
-	phone_number: "62xxxx", // Number BOT for pairing
-	owners: ["62xxxx"], // Number Owner for specific feature access
+	phone_number: process.env.PHONE_NUMBER || "62xxxx", // Number BOT for pairing
+	owners: process.env.OWNERS ? process.env.OWNERS.split(",") : ["62xxxx"], // Comma-separated list in ENV
 
-	use_pairing_code: true,
-	pairing_wait: 1000 * 6,
+	use_pairing_code: process.env.USE_PAIRING_CODE
+		? process.env.USE_PAIRING_CODE.toLowerCase() === "true"
+		: true,
+	pairing_wait: process.env.PAIRING_WAIT
+		? parseInt(process.env.PAIRING_WAIT)
+		: 1000 * 6,
 
-	prefix: ["!", ".", "+"],
+	prefix: process.env.PREFIX
+		? process.env.PREFIX.split(",")
+		: ["!", ".", "+"],
 
 	maelyn_apikey: process.env.MAELYN_APIKEY || "", // https://maelyn.sbs
 	bing_cookie: process.env.BING_COOKIE || "", // _U
 
 	// change the timezone to your timezone
-	timezone: "Asia/Jakarta",
+	timezone: process.env.TIMEZONE || "Asia/Jakarta",
 
 	profile: {
-		namebot: "Kurodate Haruna",
-		powered: "By Maelyn APIs",
-		web: "https://maelyn.tech",
+		namebot: process.env.PROFILE_NAMEBOT || "Kurodate Haruna",
+		powered: process.env.PROFILE_POWERED || "By Maelyn APIs",
+		web: process.env.PROFILE_WEB || "https://maelyn.sbs",
 	},
 
 	images: {
-		menu: "https://s6.imgcdn.dev/Yc8bUC.png",
-		allmenu: "https://s6.imgcdn.dev/Yc8bUC.png",
+		menu: process.env.IMAGES_MENU || "https://s6.imgcdn.dev/Yc8bUC.png",
+		allmenu: process.env.IMAGES_ALLMENU || "https://s6.imgcdn.dev/Yc8bUC.png",
 	},
 
 	database: {
-		use_mongo: false,
-		mongo_url: "mongodb://localhost:27017/database",
+		use_mongo: process.env.DATABASE_USE_MONGO
+			? process.env.DATABASE_USE_MONGO.toLowerCase() === "true"
+			: false,
+		mongo_url: process.env.DATABASE_MONGO_URL || "mongodb://localhost:27017/database",
 
-		path: "./db/database.json",
-		save_interval: 10_000,
-		debug: false,
+		path: process.env.DATABASE_PATH || "./db/database.json",
+		save_interval: process.env.DATABASE_SAVE_INTERVAL
+			? parseInt(process.env.DATABASE_SAVE_INTERVAL)
+			: 10_000,
+		debug: process.env.DATABASE_DEBUG
+			? process.env.DATABASE_DEBUG.toLowerCase() === "true"
+			: false,
 	},
 };

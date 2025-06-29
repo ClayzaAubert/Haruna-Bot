@@ -1,241 +1,124 @@
-import axios from "axios";
-import { fileTypeFromBuffer } from "file-type";
+import fetch from 'node-fetch';
+import FormData from 'form-data';
+import { fileTypeFromBuffer } from 'file-type';
+import fs from 'fs';
+import axios from 'axios';
+import crypto from 'crypto';
+import path from 'path';
 
 /**
- * @abstract
- * @class Provider
- * @classdesc Abstract class for providers
- * @property {Function} form - Create a new FormData instance
- * @property {Function} upload - Upload a buffer to a provider
- * @throws {Error} Abstract class cannot be instantiated
+ * Extended MIME type mapping
  */
-class Provider {
-	/**
-	 * @constructor
-	 * @throws {Error} Abstract class cannot be instantiated
-	 */
-	constructor() {
-		if (this.constructor === Provider) {
-			throw new Error("Abstract class cannot be instantiated");
-		}
-	}
+const mimeFallback = {
+  // Text formats
+  txt: 'text/plain',
+  csv: 'text/csv',
+  html: 'text/html',
+  xml: 'text/xml',
+  json: 'application/json',
+  md: 'text/markdown',
+  
+  // Document formats
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  
+  // Audio formats
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  m4a: 'audio/mp4',
+  flac: 'audio/flac',
+  aac: 'audio/aac',
+};
 
-	/**
-	 * Create a new FormData instance
-	 * @param {any[]} args - Arguments to pass to FormData.append
-	 * @returns {FormData} A new FormData instance
-	 */
-	form(...args) {
-		const form = new FormData();
-		if (args) {
-			form.append(...args);
-		}
-		return form;
-	}
-
-	/**
-	 * Upload a buffer to a provider
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		throw new Error("Method 'upload' must be implemented");
-	}
+/**
+ * Generate random filename with extension
+ */
+function generateRandomFileName(ext) {
+  return `${crypto.randomBytes(16).toString('hex')}.${ext}`;
 }
 
 /**
- * @class TelegraphProvider
- * @classdesc Upload a buffer to telegra.ph
- * @extends Provider
+ * Get MIME type and extension from Buffer
  */
-class TelegraphProvider extends Provider {
-	/**
-	 * Upload a buffer to telegra.ph
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		const { mime, ext } = await fileTypeFromBuffer(buffer);
-		const blob = new Blob([buffer], { type: mime });
-		const form = this.form("file", blob, `file.${ext}`);
-		const { data } = await axios.post("https://telegra.ph/upload", form, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		});
-		return "https://telegra.ph" + data[0].src;
-	}
+async function getFileInfo(buffer, originalExt = '') {
+  let fileInfo = await fileTypeFromBuffer(buffer);
+  
+  // If fileTypeFromBuffer fails, try to determine from original extension
+  if (!fileInfo && originalExt) {
+    const mime = mimeFallback[originalExt.toLowerCase()];
+    if (mime) {
+      fileInfo = { ext: originalExt, mime };
+    }
+  }
+  
+  // Fallback to octet-stream if still no match
+  return fileInfo || { ext: originalExt || 'bin', mime: 'application/octet-stream' };
 }
 
 /**
- * @class QuaxProvider
- * @classdesc Upload a buffer to qu.ax
- * @extends Provider
+ * Upload file or image to Maelyn CDN from buffer or local file path
  */
-class QuaxProvider extends Provider {
-	/**
-	 * Upload a buffer to qu.ax
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		const { mime, ext } = await fileTypeFromBuffer(buffer);
-		const blob = new Blob([buffer], { type: mime });
-		const form = this.form("files[]", blob, `file.${ext}`);
-		const { data } = await axios.post("https://qu.ax/upload.php", form, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		});
-		return data.files[0].url;
-	}
+async function uploadToMaelyn(file) {
+  const formData = new FormData();
+
+  try {
+    if (Buffer.isBuffer(file)) {
+      const fileInfo = await getFileInfo(file);
+      const randomFileName = generateRandomFileName(fileInfo.ext);
+      formData.append('file', file, { 
+        filename: randomFileName, 
+        contentType: fileInfo.mime 
+      });
+
+    } else if (typeof file === 'string') {
+      if (!fs.existsSync(file)) {
+        throw new Error(`File not found: ${file}`);
+      }
+
+      const ext = path.extname(file).slice(1).toLowerCase();
+      const buffer = fs.readFileSync(file);
+      const fileInfo = await getFileInfo(buffer, ext);
+      const randomFileName = generateRandomFileName(fileInfo.ext);
+
+      formData.append('file', fs.createReadStream(file), { 
+        filename: randomFileName,
+        contentType: fileInfo.mime
+      });
+
+    } else {
+      throw new Error('Invalid file input. Must be a Buffer or file path (string).');
+    }
+
+    const response = await axios.post('https://cdn.maelyn.sbs/api/upload', formData, {
+      headers: {
+        ...formData.getHeaders(),
+        'Accept': 'application/json'
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    });
+
+    if (response.data.error) throw new Error(response.data.error);
+    console.log('✅ File uploaded successfully:', response.data.data.url);
+    return response.data.data.url;
+
+  } catch (error) {
+    console.error('❌ Error uploading file:', error.message);
+    throw error;
+  }
 }
 
-/**
- * @class FreeImageProvider
- * @classdesc Upload a buffer to freeimage.host
- * @extends Provider
- */
-class FreeImageProvider extends Provider {
-	/**
-	 * Upload a buffer to freeimage.host
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		const { data: html } = await axios
-			.get("https://freeimage.host/")
-			.catch(() => null);
-		const token = html.match(/PF.obj.config.auth_token = "(.+?)";/)[1];
-		const { mime, ext } = await fileTypeFromBuffer(buffer);
-		const blob = new Blob([buffer], { type: mime });
-		const form = this.form("source", blob, `file.${ext}`);
-		const options = {
-			type: "file",
-			action: "upload",
-			timestamp: (Date.now() / 1000).toString(),
-			auth_token: token,
-			nsfw: "0",
-		};
-		for (const [key, value] of Object.entries(options)) {
-			form.append(key, value);
-		}
-		const { data } = await axios.post("https://freeimage.host/json", form, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		});
-		return data.image.url;
-	}
-}
 
-/**
- * @class TmpFilesProvider
- * @classdesc Upload a buffer to tmpfiles.org
- * @extends Provider
- */
-class TmpFilesProvider extends Provider {
-	/**
-	 * Upload a buffer to tmpfiles.org
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		const { mime, ext } = await fileTypeFromBuffer(buffer);
-		const blob = new Blob([buffer], { type: mime });
-		const form = this.form("file", blob, `file.${ext}`);
-		const { data } = await axios.post("https://tmpfiles.org/api/v1/upload", form, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		});
-		const url = data.data.url.match(/https:\/\/tmpfiles.org\/(.*)/)[1];
-		return "https://tmpfiles.org/dl/" + url;
-	}
-}
+// 🔗 Ekspor dengan format sesuai permintaan
+const cdn = {
+  maelyn: uploadToMaelyn,
+};
 
-/**
- * @class APIGratisProvider
- * @classdesc Upload a buffer to files.apigratis.site
- * @extends Provider
- */
-class ApiGratisProvider extends Provider {
-	/**
-	 * Upload a buffer to tmpfiles.org
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 */
-	async upload(buffer) {
-		const { mime, ext } = await fileTypeFromBuffer(buffer);
-		const blob = new Blob([buffer], { type: mime });
-		const form = this.form("file", blob, `file.${ext}`);
-		const { data } = await axios.post("https://files.apigratis.site/upload", form, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		});
-		return data.result.url;
-	}
-}
-
-/**
- * @class Uploader
- * @classdesc Upload a buffer to a provider
- * @property {Object} providers - The available providers
- * @method isBuffer - Check if a buffer is a buffer
- * @method upload - Upload a buffer to a provider
- */
-class Uploader {
-	/**
-	 * @constructor
-	 */
-	constructor() {
-		this.providers = {
-			telegraph: new TelegraphProvider(),
-			quax: new QuaxProvider(),
-			freeimage: new FreeImageProvider(),
-			tmpfiles: new TmpFilesProvider(),
-			apiGratis: new ApiGratisProvider(),
-		};
-	}
-
-	/**
-	 * Check if a buffer is a buffer
-	 * @param {Buffer} buffer - The buffer to check
-	 * @returns {boolean} Whether the buffer is a buffer
-	 */
-	isBuffer(buffer) {
-		return Buffer.isBuffer(buffer);
-	}
-
-	/**
-	 * Upload a buffer to a provider
-	 * @param {Buffer} buffer - The buffer to upload
-	 * @param {string} provider - The provider to upload to
-	 * @returns {Promise<string>} The URL of the uploaded file
-	 * @throws {Error} Uploader not found
-	 * @throws {Error} Buffer is not a buffer
-	 * @throws {Error} Error uploading file
-	 */
-	async upload(buffer, provider) {
-		if (!this.providers[provider]) {
-			throw new Error("Uploader not found");
-		}
-		if (!Buffer.isBuffer(buffer)) {
-			throw new Error("Buffer is not a buffer");
-		}
-		try {
-			const url = await this.providers[provider].upload(buffer);
-			return url;
-		} catch (error) {
-			throw new Error(error);
-		}
-	}
-}
-
-const uploader = new Uploader();
-
-export default uploader;
-
-export const { telegraph, quax, freeimage, storageNeko, tmpfiles } =
-	uploader.providers;
+export default cdn;
+// 

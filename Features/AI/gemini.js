@@ -1,5 +1,3 @@
-import Uploader from "../../Libs/Uploader.js";
-
 export default {
     command: ["gemini"],
     description: "Chat Dengan Gemini AI",
@@ -11,12 +9,11 @@ export default {
     group: false,
     private: false,
 
-    haruna: async function (m, { sock, api, text }) {
+    haruna: async function (m, { sock, api, text, cdn }) {
         try {
-            if (m.quoted && /image/g.test(m.quoted.mtype || "")) {
+            if (m.quoted && /webp|image/.test(m.quoted.message?.mimetype || "")) {
                 const media = await m.quoted.download();
-                const buffer = Buffer.isBuffer(media) ? media : Buffer.from(media, "utf-8");
-                const url = await Uploader.providers.quax.upload(buffer);
+                const url = await cdn.maelyn(media);
 
                 m.replyUpdate("Processing image...", async (update) => {
                     const res = await api.get("/gemini/image", { q: text, url });
