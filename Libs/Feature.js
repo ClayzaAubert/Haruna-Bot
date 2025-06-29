@@ -50,12 +50,14 @@ class Features {
 		const isWindows = process.platform === "win32";
 		const filePath = isWindows ? `file:///${file}` : `file://${file}`;
 
+		// Hapus cache import sebelumnya (jika ada)
 		if (this.plugins[file]) {
 			Print.info(`Reloading feature: ${path.relative(this.folder, file)}`);
 			delete this.plugins[file];
 		}
 
 		try {
+			// force reload with query param to bust cache
 			const module = await import(`${filePath}?update=${Date.now()}`);
 			const plugin = module?.default;
 
@@ -86,6 +88,14 @@ class Features {
 
 		watcher.on("change", (file) => {
 			if (file.endsWith(".js")) {
+				this.importFile(file, sock);
+			}
+		});
+
+		watcher.on("add", (file) => {
+			// === FIX: tambahkan handler untuk file baru ===
+			if (file.endsWith(".js") && !this.plugins[file]) {
+				Print.info(`New file detected: ${path.relative(this.folder, file)}`);
 				this.importFile(file, sock);
 			}
 		});

@@ -9,7 +9,12 @@ export const UserSchema = {
 	lastDailyClaim : Number,
 	lastSlot : Number,
 	games: Object,
-	autolevelup: Boolean
+	autolevelup: Boolean,
+	afk: {
+		status: Boolean,
+		reason: String,
+		time: Number
+	},
 };
 
 export const GroupSchema = {

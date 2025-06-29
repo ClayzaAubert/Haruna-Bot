@@ -18,9 +18,9 @@ export default {
 				`Where is the path?\n${usedPrefix + command} Features/icikiwir.js`
 			);
 		}
-		if (!m.quoted.text) return m.reply("Reply code.");
+		if (!m.quoted.message) return m.reply("Reply code.");
 		const path = text;
-		await writeFileSync(path, m.quoted.text);
+		await writeFileSync(path, m.quoted.message);
 		m.reply(`Saved ${path} to file.`);
 	},
 	failed: "Failed to haruna the %cmd command\n%error",

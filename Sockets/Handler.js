@@ -91,6 +91,54 @@ export async function Handler(upsert, sock, store) {
 	}
 
 	user.name = message.pushName;
+
+		if (message.isGroup) {
+		if (message.mentionedJid && Array.isArray(message.mentionedJid)) {
+			for (const jid of message.mentionedJid) {
+				const mentionedUser = db.users.get(jid);
+				if (mentionedUser && mentionedUser.afk && mentionedUser.afk.status) {
+					const now = Date.now();
+					const afkTime = mentionedUser.afk.time || now;
+					const elapsed = now - afkTime;
+					function msToTime(duration) {
+						let seconds = Math.floor((duration / 1000) % 60),
+							minutes = Math.floor((duration / (1000 * 60)) % 60),
+							hours = Math.floor((duration / (1000 * 60 * 60)) % 24),
+							days = Math.floor(duration / (1000 * 60 * 60 * 24));
+						return (
+							(days ? days + " hari, " : "") +
+							(hours ? hours + " jam, " : "") +
+							(minutes ? minutes + " menit, " : "") +
+							(seconds ? seconds + " detik" : "")
+						);
+					}
+					await sock.sendMessage(
+						message.chat,
+						{
+							text:
+								`@${jid.split("@")[0]} sedang AFK` +
+								(mentionedUser.afk.reason ? `\n> *Alasan* : ${mentionedUser.afk.reason}` : "") +
+								`\n> *Sejak* : ${msToTime(elapsed)} yang lalu`
+						},
+						{ quoted: message }
+					);
+				}
+			}
+		}
+
+		if (user.afk && user.afk.status) {
+			user.afk = { status: false, reason: "", time: 0 };
+			await sock.sendMessage(
+				message.chat,
+				{
+					text: `@${message.sender.split("@")[0]} sudah tidak AFK.`,
+					mentions: [message.sender],
+				},
+				{ quoted: message }
+			);
+		}
+	}
+	
 	let executed_plugin = null;
 	try {
 		for (const name in feature.plugins) {

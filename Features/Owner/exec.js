@@ -16,7 +16,7 @@ export default {
 	 * @param {import("../../Utils/Messages").ExtendedWAMessage} m
 	 * @param {import("../Handler").miscOptions} options
 	 */
-	haruna: async function (m, { text, args, sock, api, feature, db }) {
+	haruna: async function (m, { text, args, sock, api, cdn, feature, db }) {
 		try {
 			let result = await eval(`(async () => { return ${text} })()`); // << ganti jadi return agar bisa console log objek
 			if (typeof result !== "string") {
