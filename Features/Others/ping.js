@@ -74,6 +74,7 @@ export default {
 • Active Handles    : ${process._getActiveHandles().length}
 • Active Requests   : ${process._getActiveRequests().length}
 • User              : ${username}
+• Baileys           : ${process.env.Baileys || "Unknown"}
 
 ✅ *Bot is running smoothly!*`
 		);
