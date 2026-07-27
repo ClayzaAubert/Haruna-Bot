@@ -1,35 +1,28 @@
 FROM node:22-slim
 
-# Install ffmpeg untuk sticker command
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+      ffmpeg \
+      build-essential \
+      python3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy package files dulu (layer cache)
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY package*.json .npmrc ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy source
 COPY src/ ./src/
-COPY .env.example .env.example
+COPY .env.example ./.env
 
-# Buat direktori data dan logs
-RUN mkdir -p data sessions logs
+RUN mkdir -p data sessions logs && \
+    chown -R node:node /app
 
-# Non-root user untuk security
-RUN useradd -r -u 1001 botuser && \
-    chown -R botuser:botuser /app
-USER botuser
+USER node
 
-ENV NODE_ENV=production
-ENV AUTH_BACKEND=sqlite
+ENV NODE_ENV=production \
+    LOG_LEVEL=info
 
-EXPOSE 3000
+VOLUME ["/app/data", "/app/sessions", "/app/logs"]
 
-# Health check — cek apakah proses masih jalan
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "process.exit(0)" || exit 1
-
-CMD ["node", "src/app.js"]
+CMD ["node", "src/index.js"]
