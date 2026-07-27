@@ -1,155 +1,207 @@
-# AkaneBot — Production WhatsApp Bot Framework
+# HarunaBot
 
-> Built on [Baileys](https://baileys.wiki) · Node.js ESM · Plugin-based architecture
- opencode -s ses_05ed87b68ffeT1tk7napH4luEb
+WhatsApp bot framework powered by [Baileys](https://baileys.wiki), Node.js ESM, better-sqlite3, and modular architecture.
+
+> **Author** — [Clayza Aubert](https://github.com/ClayzaAubert)  
+> **Based on** — [Akanebot](https://github.com/Arifzyn19/akanebot) (original codebase)
+
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Copy and fill in env
 cp .env.example .env
-
-# 3. Start (dev mode with --watch)
-npm run dev
-
-# 4. Production
-npm start
+# fill in your env, then:
+npm run dev    # dev mode with --watch
+npm start      # production
 ```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
-├── app.js                  ← Bootstrap & anti-crash
-├── config/
-│   ├── index.js            ← Env loader (single source of truth)
-│   └── constants.js        ← Magic numbers / limits
-├── core/
-│   ├── registry.js         ← Command Map (name + aliases → command)
-│   ├── serializer.js       ← Normalizes raw Baileys protos → clean object
-│   ├── context.js          ← ctx builder (ctx.reply, ctx.react, etc.)
-│   ├── router.js           ← Prefix detection → command dispatch
-│   └── loader.js           ← Dynamic import of commands & plugins
-├── handlers/
-│   ├── message.handler.js  ← messages.upsert entry point
-│   └── connection.handler.js ← Reconnect / QR / logout logic
+├── index.js                   # Entry point
+├── boot/
+│   └── bootstrap.js           # Init sequence: DB → commands → extensions → socket → events
+├── environment/
+│   ├── settings.js            # .env-based config (prefix, owner, paths, AI keys)
+│   └── limits.js              # Cooldowns, reconnect limits, TTLs
+├── helpers/
+│   ├── logger.js              # Pino with pino-pretty dev / TUI log stream
+│   ├── formatter.js           # formatDuration, formatBytes, formatNumber
+│   ├── identifier.js          # JID/phone helpers, isStatus()
+│   └── ascii-banner.js        # Console startup banner
+├── storage/
+│   ├── connection.js          # better-sqlite3 singleton (WAL mode)
+│   ├── definitions.js         # CREATE TABLE + indexes
+│   ├── initializer.js         # configureDatabase → createSchema
+│   ├── lazy.js                # lazyPrepare — deferred statement compilation
+│   ├── migration.js           # npm run db:migrate
+│   ├── models/                # Data access objects
+│   │   ├── user.js            # CRUD, exp/level, premium, ban, leaderboard
+│   │   ├── wallet.js          # cash, bank, transfer, deposit, withdraw
+│   │   ├── stats.js           # RPG stats: HP, ATK, DEF, SPD, equipment, W/L
+│   │   ├── group.js           # Group settings
+│   │   ├── cooldown.js        # DB-backed cooldowns
+│   │   ├── item.js / inventory.js / quest.js
+│   │   └── bot-config.js      # Key-value runtime settings
+│   └── seeds/                 # 14 items + 5 quests
+├── network/
+│   ├── client.js              # makeWASocket factory
+│   ├── authenticator.js       # Auth backend (file or SQLite)
+│   └── sqlite-store.js        # Baileys auth state in SQLite
 ├── events/
-│   └── index.js            ← All sock.ev.on() in one place
-├── middleware/
-│   ├── index.js            ← Pipeline runner
-│   ├── cooldown.js         ← Per-user per-command rate limiting
-│   ├── ownerOnly.js
-│   ├── groupOnly.js
-│   ├── privateOnly.js
-│   └── adminOnly.js
+│   ├── registry.js            # Bind all sock.ev.on()
+│   ├── message-pipeline.js    # messages.upsert → processors → AI → dispatch
+│   ├── connection-watcher.js  # Reconnect, QR, pairing code
+│   └── group-observer.js      # Welcome/leave messages
+├── messages/
+│   ├── parser.js              # Normalize Baileys raw messages (v7 LID-aware)
+│   ├── context.js             # ctx builder: reply, send, react, sendMedia, downloadMedia
+│   └── dispatcher.js          # Prefix detection → guards → command.execute
 ├── commands/
-│   ├── general/            ← Public commands
-│   │   ├── ping.js
-│   │   ├── help.js
-│   │   └── info.js
-│   └── owner/              ← Restricted commands
-│       ├── eval.js
-│       └── reload.js
-├── services/
-│   ├── sticker.service.js  ← Business logic (not in commands!)
-│   └── downloader.service.js
-├── plugins/
-│   └── example.plugin.js   ← Auto-loaded at startup
-├── utils/
-│   ├── logger.js           ← Pino instance
-│   ├── banner.js           ← Startup art
-│   ├── jid.js              ← JID helpers
-│   └── format.js           ← Duration, bytes, etc.
-├── lib/
-│   ├── socket.js           ← Socket factory (makeWASocket wrapper)
-│   └── auth.js             ← Auth state abstraction
-└── database/
-    └── index.js            ← DB layer scaffold
+│   ├── registry.js / loader.js / index.js
+│   └── modules/               # Auto-loaded by category
+│       ├── general/           # ping, info, help
+│       ├── owner/             # eval, reload, ban, broadcast, botsetting, stats, system, premium, tools
+│       ├── group/             # kick, promote, demote, tagall, warn, groupset, welcome, groupinfo
+│       ├── economy/           # balance, daily, transfer, bank, slots, roulette, coinflip, work, crime, inventory, history
+│       ├── rpg/               # battle, dungeon, profile, heal, quest, leaderboard, fish, mine, rob
+│       ├── shop/              # shop, buy, sell, equip, lootbox
+│       ├── utility/           # sticker, toimg, ai, translate, tts, cuaca, wiki
+│       └── downloader/        # youtube, tiktok, instagram, facebook
+├── guards/                    # Middleware pipeline
+│   ├── pipeline.js            # runGuardChain — ordered pipeline
+│   ├── throttles/
+│   │   ├── rate-limiter.js    # 15 cmd/min per user (NodeCache)
+│   │   └── cooldown.js        # DB-backed per-command cooldown
+│   └── restrictions/
+│       ├── ban-check.js / owner-only.js / premium-only.js
+│       └── group-only.js / private-only.js / admin-only.js
+├── features/                  # Business logic
+│   ├── ai.js                  # Multi-provider AI (OpenAI, Anthropic, Groq)
+│   ├── broadcast.js / downloader.js
+│   ├── combat/
+│   │   ├── battle.js          # PvP turn-based
+│   │   ├── dungeon.js         # PvE monster battles
+│   │   └── rob.js             # ATK vs DEF robbery
+│   ├── economy/
+│   │   ├── lootbox.js         # Weighted gacha (common 60% → legendary 1%)
+│   │   └── shop.js            # Buy/sell/equip
+│   ├── media/
+│   │   └── sticker.js         # Image/video → WebP (ffmpeg) + EXIF
+│   └── platforms/             # youtube, tiktok, instagram, facebook resolution
+├── extensions/                # Plugin/hook system
+│   ├── lifecycle/orchestrator.js  # ExtensionManager: register + runProcessors
+│   ├── safety/                # anti-flood, anti-link
+│   └── maintenance/           # cooldown-cleaner, scheduler
+├── tui/                       # Terminal UI dashboard (blessed)
+│   ├── index.js               # Screen, menu, 5 views, keyboard bindings
+│   ├── log-store.js           # Ring buffer (500 lines)
+│   └── log-stream.js          # Pino Writable → log-store
+└── boot/
+    └── bootstrap.js           # DB → commands → extensions → socket → events
 ```
 
 ---
 
-## ✍️ Adding a Command
+## Terminal UI
 
-Create `src/commands/<category>/<name>.js`:
+Set `DASH_TERMINAL=true` in `.env` to enable the blessed-based TUI dashboard:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ░█░█░█▀▄░█▄░█              ● Online               │
+│  ░█▀█░█▀▄░█░▀█              v4.0.0                 │
+│  ░▀░▀░▀░▀░▀░░▀                                      │
+├──────────────────┬──────────────────────────────────┤
+│                  │  System Overview                 │
+│  ▶ Dashboard     │                                  │
+│    System Info   │  ● Node     v22.16.0             │
+│    Services      │  ● Platform win32 / x64          │
+│    Logs          │  ● Uptime   0d 0h 0m             │
+│    About         │  ● RAM      10.5/15.7GB (67%)    │
+│                  │                                  │
+│                  │  Modules                         │
+│                  │  ● Commands 55                   │
+│                  │  ● Extensions 5                  │
+├──────────────────┴──────────────────────────────────┤
+│  ↑↓ Navigate │ Enter Select │ R Refresh │ Q Quit   │
+└─────────────────────────────────────────────────────┘
+```
+
+- **Dashboard** — system overview + module summary
+- **System Info** — OS, hostname, RAM, PID, CWD
+- **Services** — database, AI, commands, extensions status
+- **Logs** — live pino log tail with color levels, auto-refresh every 2s
+- **About** — version, author, credits
+
+Fallback: when `DASH_TERMINAL=false` or terminal < 80×20, prints a clean console banner.
+
+---
+
+## Adding a Command
+
+Create `src/commands/modules/<category>/<name>.js`:
 
 ```js
 export default {
-  name:        'greet',
-  aliases:     ['hi', 'hello'],
+  name:        'hello',
+  aliases:     ['hi'],
   category:    'general',
   description: 'Sapa pengguna',
   cooldown:    3_000,
   ownerOnly:   false,
   groupOnly:   false,
+  privateOnly: false,
   adminOnly:   false,
+  premiumOnly: false,
 
   async execute(ctx) {
-    await ctx.reply(`Halo, ${ctx.pushName}! 👋`)
+    await ctx.reply(`Halo, ${ctx.pushName}!`)
   },
 }
 ```
 
-That's it. The loader picks it up automatically on next start (or `!reload greet`).
-
----
-
-## 🔌 Adding a Plugin
-
-Create `src/plugins/myplugin.plugin.js`:
+Multiple commands per file? Use named exports ending with `Command`:
 
 ```js
-export default {
-  name: 'my-plugin',
-  async init() {
-    // runs once at startup
-  },
-  async destroy() {
-    // cleanup on unload
-  },
-}
+export const helloCommand = { name: 'hello', ... }
+export const pingCommand = { name: 'ping', ... }
 ```
 
 ---
 
-## 🛡️ Middleware Flags (on command object)
+## Guard Pipeline
 
-| Flag           | Effect                              |
-|----------------|-------------------------------------|
-| `ownerOnly: true`   | Only OWNER_NUMBER can use it    |
-| `groupOnly: true`   | Groups only                     |
-| `privateOnly: true` | DM only                         |
-| `adminOnly: true`   | Group admins + owner only       |
-| `cooldown: <ms>`    | Per-user cooldown (0 = disabled)|
+Ordered middleware chain before every command:
 
----
+```
+ban-check → rate-limiter → cooldown → owner-only → premium-only → group-only → private-only → admin-only
+```
 
-## 🔮 Production Checklist
-
-- [ ] Replace `useMultiFileAuthState` with a DB-backed auth state
-- [ ] Implement `getMessage()` in `lib/socket.js` to read from your DB
-- [ ] Add `cachedGroupMetadata` population from your DB on startup
-- [ ] Set `LOG_LEVEL=warn` in production
-- [ ] Use PM2 / systemd for process management
-- [ ] Set up Redis for cooldowns (swap NodeCache in `middleware/cooldown.js`)
+Cheapest checks first (O(1) DB), most expensive last (group metadata fetch).
 
 ---
 
-## 🧩 Recommended Additions
+## Environment Variables
 
-| Feature           | Suggested approach                          |
-|-------------------|---------------------------------------------|
-| Database          | Prisma + PostgreSQL or better-sqlite3       |
-| Caching           | ioredis                                     |
-| Job Queue         | BullMQ (Redis-backed)                       |
-| Cron Jobs         | node-cron in a plugin                       |
-| REST API          | Fastify in a plugin                         |
-| Dashboard         | Separate service, reads same DB             |
-| Multi-session     | Run multiple app.js instances, one per JID  |
-| AI Integration    | OpenAI/Anthropic SDK in a service           |
+| Variable | Description |
+|----------|-------------|
+| `BOT_NAME` | Bot display name |
+| `PREFIX` | Command prefix (default `.`) |
+| `OWNER_NUMBER` | Owner JID |
+| `OPENAI_API_KEY` | AI provider (or Anthropic/Groq) |
+| `DASH_TERMINAL` | `true` for TUI dashboard |
+| `LOG_LEVEL` | pino log level |
+
+Full list in `.env.example`.
+
+---
+
+## License
+
+MIT
