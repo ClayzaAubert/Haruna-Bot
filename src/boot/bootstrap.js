@@ -4,6 +4,7 @@ import { initializeDatabase } from '#storage/initializer.js'
 import { loadCommands, loadExtensions } from '#commands/loader.js'
 import { createClient } from '#network/client.js'
 import { printStatus } from '#helpers/ascii-banner.js'
+import { setSocket } from '#helpers/shutdown.js'
 import SETTINGS from '#environment/settings.js'
 import { logger } from '#helpers/logger.js'
 import { createRequire } from 'module'
@@ -34,13 +35,14 @@ export async function bootstrap() {
   }
 
   try {
-    if (process.env.OPENAI_API_KEY) aiProvider = 'OpenAI'
-    else if (process.env.ANTHROPIC_API_KEY) aiProvider = 'Anthropic'
-    else if (process.env.GROQ_API_KEY) aiProvider = 'Groq'
+    if (SETTINGS.openaiKey) aiProvider = 'OpenAI'
+    else if (SETTINGS.anthropicKey) aiProvider = 'Anthropic'
+    else if (SETTINGS.groqKey) aiProvider = 'Groq'
   } catch {}
 
   try {
     const sock = await createClient()
+    setSocket(sock)
     logger.info('[Boot] Socket created & events bound')
 
     const statusInfo = {

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { logger } from '#helpers/logger.js'
+import SETTINGS from '#environment/settings.js'
 
 const SYSTEM_PROMPT = `Kamu adalah HarunaBot, asisten WhatsApp yang pintar dan ramah. 
 Jawab dalam bahasa yang sama dengan pertanyaan user (Indonesia/English).
@@ -13,9 +14,9 @@ class AIService {
   }
 
   _detect() {
-    if (process.env.OPENAI_API_KEY) return 'openai'
-    if (process.env.ANTHROPIC_API_KEY) return 'anthropic'
-    if (process.env.GROQ_API_KEY) return 'groq'
+    if (SETTINGS.openaiKey) return 'openai'
+    if (SETTINGS.anthropicKey) return 'anthropic'
+    if (SETTINGS.groqKey) return 'groq'
     return null
   }
 
@@ -26,31 +27,53 @@ class AIService {
     return this[`_${this._provider}`](prompt, history)
   }
 
+  _extractContent(data, type) {
+    if (type === 'openai') {
+      return data?.choices?.[0]?.message?.content?.trim() ?? null
+    }
+    if (type === 'anthropic') {
+      return data?.content?.[0]?.text?.trim() ?? null
+    }
+    if (type === 'groq') {
+      return data?.choices?.[0]?.message?.content?.trim() ?? null
+    }
+    return null
+  }
+
   async _openai(prompt, history) {
     const { data } = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      model: SETTINGS.openaiModel,
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...history, { role: 'user', content: prompt }],
       max_tokens: 1000, temperature: 0.7,
-    }, { headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 30_000 })
-    return data.choices?.[0]?.message?.content?.trim() ?? 'Tidak ada respons.'
+    }, { headers: { Authorization: `Bearer ${SETTINGS.openaiKey}`, 'Content-Type': 'application/json' }, timeout: 30_000 })
+
+    const content = this._extractContent(data, 'openai')
+    if (!content) throw new Error('OpenAI: unexpected response shape')
+    return content
   }
 
   async _anthropic(prompt, history) {
     const { data } = await axios.post('https://api.anthropic.com/v1/messages', {
-      model: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5',
+      model: SETTINGS.anthropicModel,
       max_tokens: 1000, system: SYSTEM_PROMPT,
       messages: [...history, { role: 'user', content: prompt }],
-    }, { headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, timeout: 30_000 })
-    return data.content?.[0]?.text?.trim() ?? 'Tidak ada respons.'
+    }, { headers: { 'x-api-key': SETTINGS.anthropicKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, timeout: 30_000 })
+
+    const content = this._extractContent(data, 'anthropic')
+    if (!content) throw new Error('Anthropic: unexpected response shape')
+    return content
   }
 
   async _groq(prompt, history) {
     const { data } = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-      model: process.env.GROQ_MODEL ?? 'llama-3.1-8b-instant',
+      model: SETTINGS.groqModel,
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...history, { role: 'user', content: prompt }],
       max_tokens: 1000, temperature: 0.7,
-    }, { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 30_000 })
-    return data.choices?.[0]?.message?.content?.trim() ?? 'Tidak ada respons.'
+    }, { headers: { Authorization: `Bearer ${SETTINGS.groqKey}`, 'Content-Type': 'application/json' }, timeout: 30_000 })
+
+    const content = this._extractContent(data, 'groq')
+    if (!content) throw new Error('Groq: unexpected response shape')
+    return content
   }
 }
 

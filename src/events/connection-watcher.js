@@ -62,7 +62,9 @@ export async function onConnectionUpdate(update, restart, sock) {
       case 401:
         if (!everConnected) {
           logger.warn('Pairing expired, retrying...')
-          return setTimeout(restart, 2000)
+          if (reconnectTimer) clearTimeout(reconnectTimer)
+          reconnectTimer = setTimeout(restart, 2000)
+          return
         }
         logger.error('Session logged out')
         try { await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true }) } catch {}
@@ -98,6 +100,10 @@ async function reconnect(restart) {
   logger.info('Reconnecting in %dms (%d/%d)', delay, retries, RECONNECT_MAX_RETRIES)
   if (reconnectTimer) clearTimeout(reconnectTimer)
   reconnectTimer = setTimeout(() => restart(), delay)
+}
+
+export function cleanupConnectionWatcher() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 }
 
 function resolveReason(code) {

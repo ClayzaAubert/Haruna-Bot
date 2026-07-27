@@ -18,3 +18,7 @@ export function configureDatabase() {
   db.pragma('temp_store = MEMORY')
   logger.info({ path: DB_PATH }, 'Database connected')
 }
+
+export function closeDatabase() {
+  try { db.close() } catch {}
+}

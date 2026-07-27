@@ -6,6 +6,15 @@ class Orchestrator {
   register(ext) { this._extensions.push(ext) }
   count() { return this._extensions.length }
 
+  destroyAll() {
+    for (const ext of this._extensions) {
+      if (typeof ext.destroy === 'function') {
+        try { ext.destroy() } catch {}
+      }
+    }
+    this._extensions = []
+  }
+
   async runProcessors(parsed, sock) {
     for (const ext of this._extensions) {
       if (typeof ext.processMessage !== 'function') continue

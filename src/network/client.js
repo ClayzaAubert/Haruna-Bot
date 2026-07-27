@@ -13,8 +13,9 @@ const MSG_STORE_MAX = 100
 export function storeMessage(msg) {
   if (!msg?.key?.id) return
   msgStore.set(msg.key.id, msg.message)
-  if (msgStore.size > MSG_STORE_MAX) {
+  while (msgStore.size > MSG_STORE_MAX) {
     const first = msgStore.keys().next().value
+    if (!first) break
     msgStore.delete(first)
   }
 }

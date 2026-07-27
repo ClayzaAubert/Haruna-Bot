@@ -21,6 +21,13 @@ const SETTINGS = Object.freeze({
     .map(n => `${n.replace(/\D/g, '')}@s.whatsapp.net`),
 
   dashTerminal: process.env.DASH_TERMINAL === 'true',
+
+  openaiKey: process.env.OPENAI_API_KEY || '',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  anthropicKey: process.env.ANTHROPIC_API_KEY || '',
+  anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+  groqKey: process.env.GROQ_API_KEY || '',
+  groqModel: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
 })
 
 export default SETTINGS
