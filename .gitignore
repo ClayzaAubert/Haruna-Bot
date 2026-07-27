@@ -1,0 +1,10 @@
+node_modules/
+session/
+data/
+logs/
+.env
+*.db
+*.db-shm
+*.db-wal
+AGENTS.md
+tasks.md
