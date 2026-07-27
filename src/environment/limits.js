@@ -1,0 +1,10 @@
+export const COOLDOWN_DEFAULT = 3_000
+export const RECONNECT_MAX_RETRIES = 5
+export const RECONNECT_INTERVAL = 4_000
+export const GROUP_CACHE_TTL = 300_000
+export const RATE_LIMIT_MAX = 15
+export const RATE_LIMIT_WINDOW = 60
+export const MSG_STORE_MAX = 500
+export const CONNECT_TIMEOUT = 60_000
+export const QUERY_TIMEOUT = 60_000
+export const KEEPALIVE_INTERVAL = 10_000

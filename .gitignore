@@ -1,0 +1,15 @@
+node_modules/
+sessions/
+session/
+data/
+logs/
+
+.env
+
+*.db
+*.db-shm
+*.db-wal
+
+package-lock.json
+AGENTS.md
+tasks.md
