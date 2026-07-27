@@ -1,9 +1,21 @@
-# HarunaBot
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-4.0.0--beta-ff69b4?style=for-the-badge" alt="Beta 4.0.0">
+  <img src="https://img.shields.io/badge/Node-%3E%3D20-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node >= 20">
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/ESM-FFD700?style=for-the-badge&logo=javascript&logoColor=black" alt="ESM">
+</p>
 
-WhatsApp bot framework powered by [Baileys](https://baileys.wiki), Node.js ESM, better-sqlite3, and modular architecture.
+<h1 align="center">HarunaBot</h1>
 
-> **Author** — [Clayza Aubert](https://github.com/ClayzaAubert)  
-> **Based on** — [Akanebot](https://github.com/Arifzyn19/akanebot) (original codebase)
+<p align="center">
+  <strong>Beta Test v4.0.0</strong> — <em>WhatsApp bot framework powered by Baileys, Node.js ESM, and SQLite.</em><br>
+  Modular architecture with RPG, economy, AI, media processing, and terminal UI.
+</p>
+
+<p align="center">
+  <b>Author</b> — <a href="https://github.com/ClayzaAubert">Clayza Aubert</a><br>
+  <b>Based on</b> — <a href="https://github.com/Arifzyn19/akanebot">Akanebot</a> (original codebase)
+</p>
 
 ---
 
@@ -11,106 +23,16 @@ WhatsApp bot framework powered by [Baileys](https://baileys.wiki), Node.js ESM, 
 
 ```bash
 npm install
-cp .env.example .env
-# fill in your env, then:
-npm run dev    # dev mode with --watch
-npm start      # production
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── index.js                   # Entry point
-├── boot/
-│   └── bootstrap.js           # Init sequence: DB → commands → extensions → socket → events
-├── environment/
-│   ├── settings.js            # .env-based config (prefix, owner, paths, AI keys)
-│   └── limits.js              # Cooldowns, reconnect limits, TTLs
-├── helpers/
-│   ├── logger.js              # Pino with pino-pretty dev / TUI log stream
-│   ├── formatter.js           # formatDuration, formatBytes, formatNumber
-│   ├── identifier.js          # JID/phone helpers, isStatus()
-│   └── ascii-banner.js        # Console startup banner
-├── storage/
-│   ├── connection.js          # better-sqlite3 singleton (WAL mode)
-│   ├── definitions.js         # CREATE TABLE + indexes
-│   ├── initializer.js         # configureDatabase → createSchema
-│   ├── lazy.js                # lazyPrepare — deferred statement compilation
-│   ├── migration.js           # npm run db:migrate
-│   ├── models/                # Data access objects
-│   │   ├── user.js            # CRUD, exp/level, premium, ban, leaderboard
-│   │   ├── wallet.js          # cash, bank, transfer, deposit, withdraw
-│   │   ├── stats.js           # RPG stats: HP, ATK, DEF, SPD, equipment, W/L
-│   │   ├── group.js           # Group settings
-│   │   ├── cooldown.js        # DB-backed cooldowns
-│   │   ├── item.js / inventory.js / quest.js
-│   │   └── bot-config.js      # Key-value runtime settings
-│   └── seeds/                 # 14 items + 5 quests
-├── network/
-│   ├── client.js              # makeWASocket factory
-│   ├── authenticator.js       # Auth backend (file or SQLite)
-│   └── sqlite-store.js        # Baileys auth state in SQLite
-├── events/
-│   ├── registry.js            # Bind all sock.ev.on()
-│   ├── message-pipeline.js    # messages.upsert → processors → AI → dispatch
-│   ├── connection-watcher.js  # Reconnect, QR, pairing code
-│   └── group-observer.js      # Welcome/leave messages
-├── messages/
-│   ├── parser.js              # Normalize Baileys raw messages (v7 LID-aware)
-│   ├── context.js             # ctx builder: reply, send, react, sendMedia, downloadMedia
-│   └── dispatcher.js          # Prefix detection → guards → command.execute
-├── commands/
-│   ├── registry.js / loader.js / index.js
-│   └── modules/               # Auto-loaded by category
-│       ├── general/           # ping, info, help
-│       ├── owner/             # eval, reload, ban, broadcast, botsetting, stats, system, premium, tools
-│       ├── group/             # kick, promote, demote, tagall, warn, groupset, welcome, groupinfo
-│       ├── economy/           # balance, daily, transfer, bank, slots, roulette, coinflip, work, crime, inventory, history
-│       ├── rpg/               # battle, dungeon, profile, heal, quest, leaderboard, fish, mine, rob
-│       ├── shop/              # shop, buy, sell, equip, lootbox
-│       ├── utility/           # sticker, toimg, ai, translate, tts, cuaca, wiki
-│       └── downloader/        # youtube, tiktok, instagram, facebook
-├── guards/                    # Middleware pipeline
-│   ├── pipeline.js            # runGuardChain — ordered pipeline
-│   ├── throttles/
-│   │   ├── rate-limiter.js    # 15 cmd/min per user (NodeCache)
-│   │   └── cooldown.js        # DB-backed per-command cooldown
-│   └── restrictions/
-│       ├── ban-check.js / owner-only.js / premium-only.js
-│       └── group-only.js / private-only.js / admin-only.js
-├── features/                  # Business logic
-│   ├── ai.js                  # Multi-provider AI (OpenAI, Anthropic, Groq)
-│   ├── broadcast.js / downloader.js
-│   ├── combat/
-│   │   ├── battle.js          # PvP turn-based
-│   │   ├── dungeon.js         # PvE monster battles
-│   │   └── rob.js             # ATK vs DEF robbery
-│   ├── economy/
-│   │   ├── lootbox.js         # Weighted gacha (common 60% → legendary 1%)
-│   │   └── shop.js            # Buy/sell/equip
-│   ├── media/
-│   │   └── sticker.js         # Image/video → WebP (ffmpeg) + EXIF
-│   └── platforms/             # youtube, tiktok, instagram, facebook resolution
-├── extensions/                # Plugin/hook system
-│   ├── lifecycle/orchestrator.js  # ExtensionManager: register + runProcessors
-│   ├── safety/                # anti-flood, anti-link
-│   └── maintenance/           # cooldown-cleaner, scheduler
-├── tui/                       # Terminal UI dashboard (blessed)
-│   ├── index.js               # Screen, menu, 5 views, keyboard bindings
-│   ├── log-store.js           # Ring buffer (500 lines)
-│   └── log-stream.js          # Pino Writable → log-store
-└── boot/
-    └── bootstrap.js           # DB → commands → extensions → socket → events
+cp .env.example .env     # fill in your config
+npm run dev              # dev mode with --watch
+npm start                # production
 ```
 
 ---
 
 ## Terminal UI
 
-Set `DASH_TERMINAL=true` in `.env` to enable the blessed-based TUI dashboard:
+Set `DASH_TERMINAL=true` in `.env` to enable the blessed-based TUI dashboard — a full-screen alternate terminal with keyboard navigation, live logs, and system monitoring.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -133,26 +55,92 @@ Set `DASH_TERMINAL=true` in `.env` to enable the blessed-based TUI dashboard:
 └─────────────────────────────────────────────────────┘
 ```
 
-- **Dashboard** — system overview + module summary
-- **System Info** — OS, hostname, RAM, PID, CWD
-- **Services** — database, AI, commands, extensions status
-- **Logs** — live pino log tail with color levels, auto-refresh every 2s
-- **About** — version, author, credits
+**Views:**
+| Tab | Content |
+|-----|---------|
+| Dashboard | System overview + module summary |
+| System Info | OS, hostname, RAM, PID, CWD |
+| Services | DB, AI, commands, extensions status |
+| Logs | Live pino log tail, color-coded, auto-refresh 2s |
+| About | Version, author, credits |
 
-Fallback: when `DASH_TERMINAL=false` or terminal < 80×20, prints a clean console banner.
+Fallback console banner when `DASH_TERMINAL=false` or terminal < 80×20.
+
+---
+
+## Project Layout
+
+```
+src/
+├── index.js                       # Entry point
+├── boot/bootstrap.js              # Init: DB → commands → extensions → socket → events
+│
+├── environment/                   # Configuration layer
+│   ├── settings.js                # .env loader
+│   └── limits.js                  # Cooldowns, TTLs, reconnect limits
+│
+├── helpers/                       # Utilities
+│   ├── logger.js                  # Pino (pretty / TUI stream)
+│   ├── formatter.js               # formatDuration, formatBytes
+│   ├── identifier.js              # JID helpers, isStatus()
+│   └── ascii-banner.js            # Console fallback banner
+│
+├── storage/                       # Database (better-sqlite3, WAL mode)
+│   ├── connection.js / definitions.js / initializer.js
+│   ├── lazy.js / migration.js
+│   ├── models/                    # user, wallet, stats, group, cooldown, item, inventory, quest, bot-config
+│   └── seeds/                     # 14 items + 5 quests
+│
+├── network/                       # WhatsApp connectivity
+│   ├── client.js / authenticator.js / sqlite-store.js
+│
+├── events/                        # Baileys event handlers
+│   ├── registry.js / message-pipeline.js / connection-watcher.js / group-observer.js
+│
+├── messages/                      # Message pipeline
+│   ├── parser.js / context.js / dispatcher.js
+│
+├── commands/                      # Auto-loaded by category
+│   ├── registry.js / loader.js / index.js
+│   └── modules/
+│       ├── general/   owner/     group/
+│       ├── economy/   rpg/       shop/
+│       ├── utility/   downloader/
+│
+├── guards/                        # Middleware pipeline
+│   ├── pipeline.js
+│   ├── throttles/                 # rate-limiter, cooldown
+│   └── restrictions/              # ban, owner, premium, group, private, admin
+│
+├── features/                      # Business logic
+│   ├── ai.js                      # OpenAI / Anthropic / Groq
+│   ├── broadcast.js / downloader.js
+│   ├── combat/                    # battle (PvP), dungeon (PvE), rob
+│   ├── economy/                   # lootbox (gacha), shop
+│   ├── media/                     # sticker (ffmpeg WebP + EXIF)
+│   └── platforms/                 # youtube, tiktok, instagram, facebook
+│
+├── extensions/                    # Plugin system
+│   ├── lifecycle/orchestrator.js
+│   ├── safety/                    # anti-flood, anti-link
+│   └── maintenance/               # cooldown-cleaner, scheduler
+│
+└── tui/                           # Blessed terminal dashboard
+    ├── index.js                   # Screen, menu, 5 views, key bindings
+    ├── log-store.js               # Ring buffer
+    └── log-stream.js              # Pino → log-store
+```
 
 ---
 
 ## Adding a Command
-
-Create `src/commands/modules/<category>/<name>.js`:
 
 ```js
 export default {
   name:        'hello',
   aliases:     ['hi'],
   category:    'general',
-  description: 'Sapa pengguna',
+  description: 'Greet the user',
   cooldown:    3_000,
   ownerOnly:   false,
   groupOnly:   false,
@@ -173,6 +161,20 @@ export const helloCommand = { name: 'hello', ... }
 export const pingCommand = { name: 'ping', ... }
 ```
 
+### Context API
+
+| Method | Description |
+|--------|-------------|
+| `ctx.reply()` | Reply quoted to sender |
+| `ctx.send()` | Send plain (unquoted) |
+| `ctx.sendTo(jid)` | Send to specific chat |
+| `ctx.react(emoji)` | React with emoji |
+| `ctx.sendMedia()` | Image / video / audio / document |
+| `ctx.sendLinkPreview()` | Text + link card |
+| `ctx.downloadMedia()` | Download attached media |
+| `ctx.typing()` / `ctx.stopTyping()` | Typing indicator |
+| `ctx.isOwner()` | Check if sender is owner |
+
 ---
 
 ## Guard Pipeline
@@ -183,22 +185,60 @@ Ordered middleware chain before every command:
 ban-check → rate-limiter → cooldown → owner-only → premium-only → group-only → private-only → admin-only
 ```
 
-Cheapest checks first (O(1) DB), most expensive last (group metadata fetch).
+Cheapest checks first (in-memory / O(1) DB), most expensive last (group metadata fetch).
 
 ---
 
-## Environment Variables
+## Features
+
+| Feature | Tech |
+|---------|------|
+| AI Chat | OpenAI, Anthropic, Groq |
+| Economy | Cash, bank, daily, work, crime, slots, roulette, coinflip |
+| RPG | PvP battle, PvE dungeon, XP/level, equipment, stats |
+| Shop | Buy, sell, equip, lootbox (gacha with rarity weights) |
+| Sticker | Image/video → WebP with EXIF metadata (ffmpeg) |
+| Downloader | YouTube, TikTok, Instagram, Facebook |
+| Media | Translate, TTS, weather, Wikipedia |
+| Group Mgmt | Kick, promote, demote, tagall, warn, welcome, settings |
+| Owner Tools | Eval, reload, ban, broadcast, premium, system stats |
+| Security | Rate limiter, cooldowns, ban check, admin check, anti-flood, anti-link |
+
+---
+
+## Database
+
+- **Engine:** better-sqlite3 (synchronous, WAL mode)
+- **Pattern:** DAO per entity (user, wallet, stats, item, inventory, quest, group, cooldown)
+- **SQL:** Prepared statements via `lazyPrepare()` (deferred compilation)
+
+---
+
+## Extensions
+
+Extensions hook into the message pipeline via `processMessage(msg, sock)`. Return `false` to stop message from reaching commands.
+
+| Extension | Purpose |
+|-----------|---------|
+| anti-flood | Per-group message rate limiting |
+| anti-link | Auto-delete messages with links |
+| cooldown-cleaner | Periodic expired cooldown cleanup |
+| scheduler | Premium expiry, daily stats reset |
+
+---
+
+## Environment
+
+Key variables in `.env` — full list in `.env.example`.
 
 | Variable | Description |
 |----------|-------------|
 | `BOT_NAME` | Bot display name |
 | `PREFIX` | Command prefix (default `.`) |
-| `OWNER_NUMBER` | Owner JID |
-| `OPENAI_API_KEY` | AI provider (or Anthropic/Groq) |
+| `OWNER_NUMBER` | Owner WhatsApp number |
+| `OPENAI_API_KEY` | AI provider key (or Anthropic/Groq) |
 | `DASH_TERMINAL` | `true` for TUI dashboard |
 | `LOG_LEVEL` | pino log level |
-
-Full list in `.env.example`.
 
 ---
 
