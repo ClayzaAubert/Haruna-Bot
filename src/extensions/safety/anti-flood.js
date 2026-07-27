@@ -4,6 +4,7 @@ import { logger } from '#helpers/logger.js'
 const DEFAULT_LIMIT = 5
 const WINDOW_MS = 10_000
 const msgLog = new Map()
+const MSGLOG_MAX = 3000
 
 export default {
   name: 'anti-flood',
@@ -15,6 +16,14 @@ export default {
         const fresh = times.filter(t => now - t < WINDOW_MS)
         if (fresh.length === 0) msgLog.delete(key)
         else msgLog.set(key, fresh)
+      }
+      if (msgLog.size > MSGLOG_MAX) {
+        const iter = msgLog.keys()
+        while (msgLog.size > MSGLOG_MAX) {
+          const { value, done } = iter.next()
+          if (done) break
+          msgLog.delete(value)
+        }
       }
     }, 30_000)
     logger.debug('[AntiFlood] Initialized')

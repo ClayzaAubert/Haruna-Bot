@@ -9,7 +9,7 @@ class AIService {
   constructor() {
     this._provider = this._detect()
     if (this._provider) logger.info(`[AI] Provider: ${this._provider}`)
-    else logger.warn('[AI] No API key configured')
+    else logger.debug('[AI] No API key configured')
   }
 
   _detect() {

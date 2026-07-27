@@ -6,13 +6,14 @@ import { logger } from '#helpers/logger.js'
 import SETTINGS from '#environment/settings.js'
 import { GROUP_CACHE_TTL } from '#environment/limits.js'
 
-const groupCache = new NodeCache({ stdTTL: GROUP_CACHE_TTL / 1000, checkperiod: 120, useClones: false })
+const groupCache = new NodeCache({ stdTTL: GROUP_CACHE_TTL / 1000, checkperiod: 120, useClones: false, maxKeys: 200 })
 const msgStore = new Map()
 
+const MSG_STORE_MAX = 100
 export function storeMessage(msg) {
   if (!msg?.key?.id) return
   msgStore.set(msg.key.id, msg.message)
-  if (msgStore.size > 500) {
+  if (msgStore.size > MSG_STORE_MAX) {
     const first = msgStore.keys().next().value
     msgStore.delete(first)
   }

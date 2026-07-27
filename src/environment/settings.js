@@ -1,10 +1,13 @@
 import 'dotenv/config'
+import { resolve } from 'path'
+
+const root = process.cwd()
 
 const SETTINGS = Object.freeze({
   botName: process.env.BOT_NAME || 'HarunaBot',
   prefix: process.env.PREFIX || '!',
-  sessionPath: process.env.SESSION_PATH || './sessions',
-  dbPath: process.env.DB_PATH || './data/harunabot.db',
+  sessionPath: resolve(root, process.env.SESSION_PATH || './sessions'),
+  dbPath: resolve(root, process.env.DB_PATH || './data/harunabot.db'),
   logLevel: process.env.LOG_LEVEL || 'info',
   timezone: process.env.TIMEZONE || 'Asia/Jakarta',
   respondToSelf: process.env.RESPOND_TO_SELF === 'true',
