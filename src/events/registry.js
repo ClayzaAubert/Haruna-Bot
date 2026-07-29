@@ -1,7 +1,9 @@
 import { onMessagesUpsert } from './message-pipeline.js'
 import { onConnectionUpdate } from './connection-watcher.js'
 import { onGroupParticipantsUpdate } from './group-observer.js'
+import { addOwnerJid } from '#helpers/owner.js'
 import { logger } from '#helpers/logger.js'
+import SETTINGS from '#environment/settings.js'
 
 export function registerEvents(sock, createClient) {
   sock.ev.on('connection.update', (update) => {
@@ -17,7 +19,11 @@ export function registerEvents(sock, createClient) {
         if (!entry) continue
         const lid = entry.lid ?? entry.newLid ?? entry.key
         const pn = entry.pn ?? entry.phoneNumber ?? entry.value
-        if (lid && pn) logger.debug({ lid, pn }, 'LID mapping')
+        if (lid && pn) {
+          if (SETTINGS.ownerNumber.includes(pn)) addOwnerJid(lid)
+          if (SETTINGS.ownerNumber.includes(lid)) addOwnerJid(pn)
+          logger.debug({ lid, pn }, 'LID mapping')
+        }
       }
     } catch (err) {
       logger.warn({ err: err.message }, 'LID mapping parse error')

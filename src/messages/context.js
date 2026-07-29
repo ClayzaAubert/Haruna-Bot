@@ -1,4 +1,4 @@
-import SETTINGS from '#environment/settings.js'
+import { isOwnerJid } from '#helpers/owner.js'
 
 export function buildContext(s, sock) {
   return {
@@ -9,7 +9,12 @@ export function buildContext(s, sock) {
     quoted: s.quoted, mentions: s.mentions,
     pushName: s.pushName, timestamp: s.timestamp,
 
-    isOwner: () => SETTINGS.ownerNumber.includes(s.sender) || (s.senderAlt && SETTINGS.ownerNumber.includes(s.senderAlt)),
+    isOwner: () => {
+      if (isOwnerJid(s.sender)) return true
+      if (s.senderAlt && isOwnerJid(s.senderAlt)) return true
+      if (s.jidAlt && isOwnerJid(s.jidAlt)) return true
+      return false
+    },
 
     reply: (content, options = {}) => {
       const body = typeof content === 'string' ? { text: content } : content

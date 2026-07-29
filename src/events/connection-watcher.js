@@ -1,6 +1,7 @@
 import { DisconnectReason } from 'baileys'
 import fsp from 'fs/promises'
 import { logger } from '#helpers/logger.js'
+import { resolveOwnerLids } from '#helpers/owner.js'
 import SETTINGS from '#environment/settings.js'
 import { RECONNECT_MAX_RETRIES, RECONNECT_INTERVAL } from '#environment/limits.js'
 
@@ -35,6 +36,7 @@ export async function onConnectionUpdate(update, restart, sock) {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
     logger.info('WhatsApp Connected')
     try { await fsp.mkdir('./temp', { recursive: true }) } catch {}
+    resolveOwnerLids(sock).catch(() => {})
     return
   }
 
@@ -48,6 +50,7 @@ export async function onConnectionUpdate(update, restart, sock) {
       case DisconnectReason.connectionLost:
       case DisconnectReason.timedOut:
       case 408:
+      case 405:
       case 503:
         logger.warn('Connection lost, reconnecting...')
         return reconnect(restart)
